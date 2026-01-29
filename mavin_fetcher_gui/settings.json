@@ -8,8 +8,10 @@
   "range_end": "2026-01-28",
   "specific_dates": [],
   "drives_text": "E",
-  "include_activemap": false,
-  "summary_csv_paths": [],
+  "include_activemap": true,
+  "summary_csv_paths": [
+    "D:/Files/Data/Result/Day/#5-2 WELDING VISION(-)_JF2_20260127.csv"
+  ],
   "summary_top_n": 20,
-  "window_geometry_b64": "AdnQywADAAAAAAG0AAAADgAABTcAAAP2AAABtAAAAC0AAAU3AAAD9gAAAAAAAAAAB4AAAAG0AAAALQAABTcAAAP2"
+  "window_geometry_b64": "AdnQywADAAAAAANbAAAC0wAABt4AAAa7AAADWwAAAvIAAAbeAAAGuwAAAAAAAAAAB4AAAANbAAAC8gAABt4AAAa7"
 }
