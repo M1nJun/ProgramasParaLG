@@ -1,0 +1,15 @@
+{
+  "model": "JF2",
+  "out_dir": "C:\\Temp\\CropB_Fetch",
+  "csv_dir": "D:\\Files\\Data\\Result\\Day",
+  "date_mode": "Single date",
+  "single_date": "2026-01-27",
+  "range_start": "2026-01-28",
+  "range_end": "2026-01-28",
+  "specific_dates": [],
+  "drives_text": "E",
+  "include_activemap": false,
+  "summary_csv_paths": [],
+  "summary_top_n": 20,
+  "window_geometry_b64": "AdnQywADAAAAAAG0AAAADgAABTcAAAP2AAABtAAAAC0AAAU3AAAD9gAAAAAAAAAAB4AAAAG0AAAALQAABTcAAAP2"
+}
