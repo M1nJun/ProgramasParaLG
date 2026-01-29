@@ -636,6 +636,10 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\main_window.py',
    'PYMODULE'),
+  ('mavin_fetcher_gui.output_defaults',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\output_defaults.py',
+   'PYMODULE'),
   ('mavin_fetcher_gui.session_manager',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\session_manager.py',

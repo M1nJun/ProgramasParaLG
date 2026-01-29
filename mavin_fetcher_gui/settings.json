@@ -1,17 +1,17 @@
 {
   "model": "JF2",
-  "out_dir": "C:\\Temp\\CropB_Fetch",
+  "out_dir": "D:\\B_AREA_DL_REVIEW\\20260128",
   "csv_dir": "D:\\Files\\Data\\Result\\Day",
   "date_mode": "Single date",
-  "single_date": "2026-01-27",
+  "single_date": "2026-01-28",
   "range_start": "2026-01-28",
   "range_end": "2026-01-28",
   "specific_dates": [],
   "drives_text": "E",
-  "include_activemap": true,
+  "include_activemap": false,
   "summary_csv_paths": [
     "D:/Files/Data/Result/Day/#5-2 WELDING VISION(-)_JF2_20260127.csv"
   ],
   "summary_top_n": 20,
-  "window_geometry_b64": "AdnQywADAAAAAANbAAAC0wAABt4AAAa7AAADWwAAAvIAAAbeAAAGuwAAAAAAAAAAB4AAAANbAAAC8gAABt4AAAa7"
+  "window_geometry_b64": "AdnQywADAAAAAAJSAAAAFAAABdUAAAP8AAACUgAAADMAAAXVAAAD/AAAAAAAAAAAB4AAAAJSAAAAMwAABdUAAAP8"
 }

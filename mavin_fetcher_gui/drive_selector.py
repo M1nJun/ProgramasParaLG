@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QCheckBox, QGroupBox, QLabel
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QCheckBox, QGroupBox
 )
 
 
@@ -12,11 +12,12 @@ def allowed_drive_letters() -> list[str]:
 
 class DriveSelectorWidget(QWidget):
     """
-    Checkbox selector for drives (E/F/G only) with presets.
+    Checkbox selector for drives (E/F/G only).
     Provides:
-      - to_text(): "E,F,G"
+      - to_text(): "E,F"
       - from_text("E,F") -> checks those (ignores others)
       - checked_letters()
+    Default: nothing selected.
     """
 
     def __init__(self):
@@ -25,21 +26,6 @@ class DriveSelectorWidget(QWidget):
         self._boxes: dict[str, QCheckBox] = {}
 
         root = QVBoxLayout(self)
-
-        presets = QHBoxLayout()
-        presets.addWidget(QLabel("Presets:"))
-
-        self.btn_all = QPushButton("E,F,G")
-        self.btn_ef = QPushButton("E,F")
-        self.btn_f = QPushButton("F only")
-        self.btn_clear = QPushButton("Clear")
-
-        presets.addWidget(self.btn_all)
-        presets.addWidget(self.btn_ef)
-        presets.addWidget(self.btn_f)
-        presets.addWidget(self.btn_clear)
-        presets.addStretch(1)
-        root.addLayout(presets)
 
         group = QGroupBox("Drives")
         row = QHBoxLayout(group)
@@ -52,13 +38,8 @@ class DriveSelectorWidget(QWidget):
         row.addStretch(1)
         root.addWidget(group)
 
-        # default: all checked
-        self.set_letters(allowed_drive_letters())
-
-        self.btn_all.clicked.connect(lambda: self.set_letters(allowed_drive_letters()))
-        self.btn_ef.clicked.connect(lambda: self.set_letters(["E", "F"]))
-        self.btn_f.clicked.connect(lambda: self.set_letters(["F"]))
-        self.btn_clear.clicked.connect(lambda: self.set_all(False))
+        # ✅ default: none selected
+        self.set_all(False)
 
     def set_all(self, checked: bool) -> None:
         for cb in self._boxes.values():
@@ -67,7 +48,6 @@ class DriveSelectorWidget(QWidget):
     def set_letters(self, letters: list[str]) -> None:
         allowed = set(allowed_drive_letters())
         target = {x.strip().upper().rstrip(":") for x in letters if x.strip()}
-        # ignore anything not in allowed
         target = {x for x in target if x in allowed}
 
         for letter, cb in self._boxes.items():
@@ -80,8 +60,9 @@ class DriveSelectorWidget(QWidget):
         return ",".join(self.checked_letters())
 
     def from_text(self, drives_text: str) -> None:
+        # ✅ empty means "none selected"
         if not drives_text:
-            self.set_letters(allowed_drive_letters())
+            self.set_all(False)
             return
         parts = [x.strip().upper().rstrip(":") for x in drives_text.split(",") if x.strip()]
         self.set_letters(parts)
