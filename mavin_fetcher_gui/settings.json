@@ -1,17 +1,16 @@
 {
   "model": "JF2",
-  "out_dir": "D:\\B_AREA_DL_REVIEW\\20260128",
+  "out_dir": "",
   "csv_dir": "D:\\Files\\Data\\Result\\Day",
   "date_mode": "Single date",
-  "single_date": "2026-01-28",
-  "range_start": "2026-01-28",
-  "range_end": "2026-01-28",
+  "single_date": "",
+  "range_start": "",
+  "range_end": "",
   "specific_dates": [],
-  "drives_text": "E",
+  "selected_pcs": [],
+  "drives_text": "",
   "include_activemap": false,
-  "summary_csv_paths": [
-    "D:/Files/Data/Result/Day/#5-2 WELDING VISION(-)_JF2_20260127.csv"
-  ],
+  "summary_csv_paths": [],
   "summary_top_n": 20,
-  "window_geometry_b64": "AdnQywADAAAAAAJSAAAAFAAABdUAAAP8AAACUgAAADMAAAXVAAAD/AAAAAAAAAAAB4AAAAJSAAAAMwAABdUAAAP8"
+  "window_geometry_b64": "AdnQywADAAAAAAH+AAAApAAABYEAAANMAAAB/gAAAMMAAAWBAAADTAAAAAAAAAAAB4AAAAH+AAAAwwAABYEAAANM"
 }

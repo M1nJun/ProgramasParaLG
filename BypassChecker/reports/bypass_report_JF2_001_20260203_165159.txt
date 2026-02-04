@@ -1,0 +1,147 @@
+=== Bypass Checker Report ===
+Recipe: JF2 (folder 001)
+Kickout list: JF2.xlsx
+Required: upper=30, lower=27, both=15, union=42
+Result: FAIL  rows=42  fail=38  missing=0  bypassed=38
+
+[Rows]
+- FAIL | B_DIM_L | key=bdiml | expected=1 found=1 bypassed=1
+    MeasureItem_13 | B_DIM_L | bypass=true
+
+- FAIL | B_DIM_R | key=bdimr | expected=1 found=1 bypassed=1
+    MeasureItem_14 | B_DIM_R | bypass=true
+
+- FAIL | Bead_CNT / BEAD_CNT | key=beadcnt | expected=2 found=2 bypassed=2
+    MeasureItem_53 | BEAD_CNT | bypass=true
+    MeasureItem_89 | BEAD_CNT | bypass=true
+
+- FAIL | B_L | key=bl | expected=2 found=2 bypassed=2
+    MeasureItem_51 | B_L | bypass=true
+    MeasureItem_85 | B_L | bypass=true
+
+- FAIL | B_R | key=br | expected=2 found=2 bypassed=2
+    MeasureItem_52 | B_R | bypass=true
+    MeasureItem_86 | B_R | bypass=true
+
+- FAIL | C_DIM_L | key=cdiml | expected=1 found=1 bypassed=1
+    MeasureItem_15 | C_DIM_L | bypass=true
+
+- FAIL | C_DIM_R | key=cdimr | expected=1 found=1 bypassed=1
+    MeasureItem_16 | C_DIM_R | bypass=true
+
+- FAIL | GAP | key=gap | expected=2 found=2 bypassed=2
+    MeasureItem_40 | GAP | bypass=true
+    MeasureItem_65 | GAP | bypass=true
+
+- FAIL | GAP2 | key=gap2 | expected=2 found=2 bypassed=2
+    MeasureItem_137 | GAP2 | bypass=true
+    MeasureItem_138 | GAP2 | bypass=true
+
+- FAIL | GAP_DL | key=gapdl | expected=2 found=2 bypassed=2
+    MeasureItem_124 | GAP_DL | bypass=true
+    MeasureItem_128 | GAP_DL | bypass=true
+
+- FAIL | G_TFL1 | key=gtfl1 | expected=1 found=1 bypassed=1
+    MeasureItem_8 | G_TFL1 | bypass=true
+
+- FAIL | G_TFL2 | key=gtfl2 | expected=1 found=1 bypassed=1
+    MeasureItem_10 | G_TFL2 | bypass=true
+
+- FAIL | G_TFR1 | key=gtfr1 | expected=1 found=1 bypassed=1
+    MeasureItem_9 | G_TFR1 | bypass=true
+
+- FAIL | G_TFR2 | key=gtfr2 | expected=1 found=1 bypassed=1
+    MeasureItem_11 | G_TFR2 | bypass=true
+
+- FAIL | G_TLL | key=gtll | expected=1 found=1 bypassed=1
+    MeasureItem_1 | G_TLL | bypass=true
+
+- FAIL | G_TLR | key=gtlr | expected=1 found=1 bypassed=1
+    MeasureItem_7 | G_TLR | bypass=true
+
+- FAIL | H_DIM_L | key=hdiml | expected=1 found=1 bypassed=1
+    MeasureItem_19 | H_DIM_L | bypass=true
+
+- FAIL | H_DIM_R | key=hdimr | expected=1 found=1 bypassed=1
+    MeasureItem_20 | H_DIM_R | bypass=true
+
+- FAIL | Hole_Cnt | key=holecnt | expected=1 found=1 bypassed=1
+    MeasureItem_75 | Hole_Cnt | bypass=true
+
+- FAIL | L_DOUBLE | key=ldouble | expected=1 found=1 bypassed=1
+    MeasureItem_25 | L_DOUBLE | bypass=true
+
+- FAIL | LEADFILM | key=leadfilm | expected=2 found=2 bypassed=2
+    MeasureItem_30 | LEADFILM | bypass=true
+    MeasureItem_57 | LEADFILM | bypass=true
+
+- FAIL | LEADFILM2 | key=leadfilm2 | expected=2 found=2 bypassed=2
+    MeasureItem_114 | LEADFILM2 | bypass=true
+    MeasureItem_115 | LEADFILM2 | bypass=true
+
+- FAIL | LEADFILM_BTM | key=leadfilmbtm | expected=2 found=2 bypassed=2
+    MeasureItem_38 | LEADFILM_BTM | bypass=true
+    MeasureItem_63 | LEADFILM_BTM | bypass=true
+
+- FAIL | LONG_TAPE_L | key=longtapel | expected=1 found=1 bypassed=1
+    MeasureItem_0 | LONG_TAPE_L | bypass=true
+
+- FAIL | LONG_TAPE_L1 | key=longtapel1 | expected=1 found=1 bypassed=1
+    MeasureItem_3 | LONG_TAPE_L1 | bypass=true
+
+- FAIL | LONG_TAPE_L2 | key=longtapel2 | expected=1 found=1 bypassed=1
+    MeasureItem_5 | LONG_TAPE_L2 | bypass=true
+
+- FAIL | LONG_TAPE_L3 | key=longtapel3 | expected=1 found=1 bypassed=1
+    MeasureItem_17 | LONG_TAPE_L3 | bypass=true
+
+- FAIL | LONG_TAPE_L4 | key=longtapel4 | expected=1 found=1 bypassed=1
+    MeasureItem_22 | LONG_TAPE_L4 | bypass=true
+
+- FAIL | LONG_TAPE_R | key=longtaper | expected=1 found=1 bypassed=1
+    MeasureItem_2 | LONG_TAPE_R | bypass=true
+
+- FAIL | LONG_TAPE_R1 | key=longtaper1 | expected=1 found=1 bypassed=1
+    MeasureItem_4 | LONG_TAPE_R1 | bypass=true
+
+- FAIL | LONG_TAPE_R2 | key=longtaper2 | expected=1 found=1 bypassed=1
+    MeasureItem_6 | LONG_TAPE_R2 | bypass=true
+
+- FAIL | LONG_TAPE_R3 | key=longtaper3 | expected=1 found=1 bypassed=1
+    MeasureItem_18 | LONG_TAPE_R3 | bypass=true
+
+- FAIL | LONG_TAPE_R4 | key=longtaper4 | expected=1 found=1 bypassed=1
+    MeasureItem_24 | LONG_TAPE_R4 | bypass=true
+
+- FAIL | R_DOUBLE | key=rdouble | expected=1 found=1 bypassed=1
+    MeasureItem_28 | R_DOUBLE | bypass=true
+
+- PASS | SEPA | key=sepa | expected=2 found=2 bypassed=0
+    MeasureItem_32 | SEPA | bypass=false
+    MeasureItem_59 | SEPA | bypass=false
+
+- PASS | SEPA_LEFT | key=sepaleft | expected=2 found=2 bypassed=0
+    MeasureItem_34 | SEPA_LEFT | bypass=false
+    MeasureItem_61 | SEPA_LEFT | bypass=false
+
+- PASS | SEPA_RIGHT | key=separight | expected=2 found=2 bypassed=0
+    MeasureItem_36 | SEPA_RIGHT | bypass=false
+    MeasureItem_62 | SEPA_RIGHT | bypass=false
+
+- PASS | SEPA_TAB | key=sepatab | expected=2 found=2 bypassed=0
+    MeasureItem_33 | SEPA_TAB | bypass=false
+    MeasureItem_60 | SEPA_TAB | bypass=false
+
+- FAIL | Tab_Damage | key=tabdamage | expected=2 found=2 bypassed=2
+    MeasureItem_110 | Tab_Damage | bypass=true
+    MeasureItem_111 | Tab_Damage | bypass=true
+
+- FAIL | TAPE_IN | key=tapein | expected=2 found=2 bypassed=2
+    MeasureItem_31 | TAPE_IN | bypass=true
+    MeasureItem_58 | TAPE_IN | bypass=true
+
+- FAIL | TL | key=tl | expected=1 found=1 bypassed=1
+    MeasureItem_12 | TL | bypass=true
+
+- FAIL | Welding_hole | key=weldinghole | expected=1 found=1 bypassed=1
+    MeasureItem_42 | Welding_Hole | bypass=true

@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QTabWidget
 from .fetch_tab import FetchTab
 from .summary_tab import SummaryTab
 from .viewer_tab import ViewerTab
+from .scroll_wrap import wrap_scroll
 from .settings_store import load_settings, save_settings, Settings
 from .session_manager import SessionManager
 from .session_state import SessionState
@@ -23,6 +24,7 @@ class MainWindow(QMainWindow):
             model=self._settings.model or "JF2",
             out_dir=self._settings.out_dir or "",
             csv_dir=getattr(self._settings, "csv_dir", r"D:\Files\Data\Result\Day"),
+            selected_pcs=list(getattr(self._settings, "selected_pcs", []) or []),
             date_mode=self._settings.date_mode or "Single date",
             single_date=self._settings.single_date or "",
             range_start=self._settings.range_start or "",
@@ -31,17 +33,18 @@ class MainWindow(QMainWindow):
         )
         self.session = SessionManager(session_state)
 
+        # Real tab widgets (keep references!)
         self.fetch_tab = FetchTab(self.session)
         self.summary_tab = SummaryTab(self.session)
         self.viewer_tab = ViewerTab(self.session)
 
+        # Wrap each tab in a scroll area so the whole page can scroll
         tabs = QTabWidget()
-        tabs.addTab(self.fetch_tab, "Fetch")
-        tabs.addTab(self.summary_tab, "Summary")
-        tabs.addTab(self.viewer_tab, "Viewer")
+        tabs.addTab(wrap_scroll(self.fetch_tab), "Fetch")
+        tabs.addTab(wrap_scroll(self.summary_tab), "Summary")
+        tabs.addTab(wrap_scroll(self.viewer_tab), "Viewer")
         self.setCentralWidget(tabs)
 
-        # store tabs for switching later
         self._tabs = tabs
 
         # Connect summary -> viewer jump
@@ -63,7 +66,8 @@ class MainWindow(QMainWindow):
 
     def _jump_to_viewer(self, class_key: str) -> None:
         # Switch to viewer tab and ask it to select the class
-        self._tabs.setCurrentWidget(self.viewer_tab)
+        # Note: wrapped in scroll area, but we still set current tab correctly by index.
+        self._tabs.setCurrentIndex(2)
         self.viewer_tab.show_class_key(class_key)
 
     def closeEvent(self, event) -> None:
@@ -74,6 +78,7 @@ class MainWindow(QMainWindow):
         merged.model = s.model
         merged.out_dir = s.out_dir
         merged.csv_dir = s.csv_dir
+        merged.selected_pcs = list(getattr(s, "selected_pcs", []) or [])
         merged.date_mode = s.date_mode
         merged.single_date = s.single_date
         merged.range_start = s.range_start
@@ -82,7 +87,8 @@ class MainWindow(QMainWindow):
 
         # per-tab settings
         fetch_state = self.fetch_tab.collect_settings()
-        merged.drives_text = fetch_state.get("drives_text", merged.drives_text)
+        if "drives_text" in fetch_state:
+            merged.drives_text = fetch_state.get("drives_text", merged.drives_text)
         merged.include_activemap = bool(fetch_state.get("include_activemap", merged.include_activemap))
 
         sum_state = self.summary_tab.collect_settings()

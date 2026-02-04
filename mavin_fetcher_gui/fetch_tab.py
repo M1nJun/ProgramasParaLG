@@ -4,12 +4,11 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QCheckBox,
-    QProgressBar, QMessageBox
+    QProgressBar, QMessageBox, QApplication
 )
 
 from .log_widget import LogWidget
 from .fetch_worker import FetchWorker, FetchTaskConfig
-from .drive_selector import DriveSelectorWidget
 from .session_panel import SessionPanel
 from .session_manager import SessionManager
 
@@ -24,13 +23,9 @@ class FetchTab(QWidget):
         root = QVBoxLayout(self)
         root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Shared session panel
+        # Shared session panel (includes PC selector)
         self.session_panel = SessionPanel(self.session)
         root.addWidget(self.session_panel)
-
-        # Drives selector (E/F/G)
-        self.drive_selector = DriveSelectorWidget()
-        root.addWidget(self.drive_selector)
 
         self.include_active = QCheckBox("Include ActiveMap")
         root.addWidget(self.include_active)
@@ -40,6 +35,13 @@ class FetchTab(QWidget):
         self.run_btn = QPushButton("Run")
         self.cancel_btn = QPushButton("Cancel")
         self.cancel_btn.setEnabled(False)
+
+        # Prevent Enter/Space default-button weirdness
+        self.run_btn.setAutoDefault(False)
+        self.run_btn.setDefault(False)
+        self.cancel_btn.setAutoDefault(False)
+        self.cancel_btn.setDefault(False)
+
         row.addWidget(self.run_btn)
         row.addWidget(self.cancel_btn)
         row.addStretch(1)
@@ -74,6 +76,11 @@ class FetchTab(QWidget):
         self.cancel_btn.clicked.connect(self.on_cancel)
 
     def on_run(self) -> None:
+        # ✅ Hard guard: ignore any startup-trigger noise (EXE issue)
+        w = self.window()
+        if not (w and w.isVisible() and QApplication.activeWindow() is w):
+            return
+
         if self.worker and self.worker.isRunning():
             return
 
@@ -83,38 +90,36 @@ class FetchTab(QWidget):
             QMessageBox.warning(self, "Missing input", "Please select a valid date / range / dates in Session.")
             return
 
-        drives_text = self.drive_selector.to_text()
-        if not drives_text.strip():
-            QMessageBox.warning(self, "Missing input", "Please select at least one drive (E/F/G).")
+        if not s.selected_pcs:
+            QMessageBox.warning(self, "Missing input", "Please select at least one PC in Session.")
             return
 
         if not s.out_dir.strip():
             QMessageBox.warning(self, "Missing input", "Please choose an output folder in Session.")
             return
 
+        # Keep worker compatibility: encode date_text
+        if s.date_mode == "Single date":
+            date_text = s.single_date
+        elif s.date_mode == "Date range":
+            date_text = f"{s.range_start} {s.range_end}"
+        else:
+            date_text = ",".join(s.specific_dates or [])
+
         cfg = FetchTaskConfig(
             date_mode=s.date_mode,
-            date_text="",  # not used by worker when we pass state-derived fields? (kept for compatibility)
+            date_text=date_text,
             out_dir=s.out_dir,
             model=s.model,
-            drives_text=drives_text,
+            selected_pcs=list(s.selected_pcs),
             include_activemap=self.include_active.isChecked(),
         )
-
-        # Worker expects date_text; simplest: encode state into date_text used by worker parser:
-        # We'll keep worker unchanged by providing what it expects:
-        if s.date_mode == "Single date":
-            cfg = FetchTaskConfig(s.date_mode, s.single_date, s.out_dir, s.model, drives_text, cfg.include_activemap)
-        elif s.date_mode == "Date range":
-            cfg = FetchTaskConfig(s.date_mode, f"{s.range_start} {s.range_end}", s.out_dir, s.model, drives_text, cfg.include_activemap)
-        else:
-            cfg = FetchTaskConfig(s.date_mode, ",".join(s.specific_dates or []), s.out_dir, s.model, drives_text, cfg.include_activemap)
 
         self.progress.setValue(0)
         self.progress_label.setText("Copied: 0 / 0")
         self.class_label.setText("Current class: -")
         self.file_label.setText("File: -")
-        self.log.append_line("[INFO] Starting fetch...")
+        self.log.append_line("[INFO] Starting remote fetch...")
 
         self.worker = FetchWorker(cfg)
         self.worker.progress_pct.connect(self.progress.setValue)
@@ -144,12 +149,9 @@ class FetchTab(QWidget):
             QMessageBox.warning(self, "Stopped", message)
 
     def apply_settings(self, s) -> None:
-        # Only per-fetch settings here; session is handled by MainWindow->SessionManager
-        self.drive_selector.from_text(getattr(s, "drives_text", "") or "")
         self.include_active.setChecked(bool(getattr(s, "include_activemap", False)))
 
     def collect_settings(self) -> dict:
         return {
-            "drives_text": self.drive_selector.to_text(),
             "include_activemap": self.include_active.isChecked(),
         }

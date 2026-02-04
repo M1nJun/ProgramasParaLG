@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional
+
+from pc_config import PCEntry
+from remote_paths import RemoteVisionPC
+
+from preference_reader import read_recipe_info
+from recipe_parser import parse_recipe_measures
+from kickout_loader import load_kickout_list_xlsx
+from checker import check_kickout, CheckReport
+
+
+@dataclass(frozen=True)
+class PCCheckResult:
+    pc: PCEntry
+    report: Optional[CheckReport]
+    error: Optional[str]
+
+
+def check_one_pc(pc: PCEntry, kickout_dir: Path, vision_mode: str) -> PCCheckResult:
+    try:
+        remote = RemoteVisionPC(ip=pc.ip, share_name="C")
+
+        info = read_recipe_info(remote.preference_ini)
+        recipe_path = remote.recipe_file(info.recipe_id_3digit, info.recipe_name)
+        measures = parse_recipe_measures(recipe_path)
+
+        kickout_path = kickout_dir / f"{info.recipe_name}.xlsx"
+
+        # Auto sheet (first sheet) unless you later want strict sheet naming
+        kickout = load_kickout_list_xlsx(kickout_path, sheet_name=None)
+
+        report = check_kickout(
+            measures=measures,
+            kickout=kickout,
+            recipe_name=info.recipe_name,
+            recipe_id_3digit=info.recipe_id_3digit,
+            kickout_filename=kickout_path.name,
+        )
+
+        return PCCheckResult(pc=pc, report=report, error=None)
+
+    except Exception as e:
+        return PCCheckResult(pc=pc, report=None, error=str(e))
+
+
+def check_all_pcs(pcs: List[PCEntry], kickout_dir: Path, vision_mode: str) -> List[PCCheckResult]:
+    return [check_one_pc(pc, kickout_dir, vision_mode) for pc in pcs]

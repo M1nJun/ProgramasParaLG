@@ -9,17 +9,18 @@ from mavin_fetcher.date_utils import parse_ymd, date_range_inclusive, parse_date
 
 @dataclass
 class SessionState:
-    # Shared selection used across Fetch/Summary/Viewer
     model: str = "JF2"
     out_dir: str = ""
     out_dir_user_set: bool = False
     csv_dir: str = r"D:\Files\Data\Result\Day"
 
-    # Date selection
+    # ✅ Remote PCs selected
+    selected_pcs: List[str] = field(default_factory=list)
+
     date_mode: str = "Single date"
-    single_date: str = ""        # yyyy-MM-dd
-    range_start: str = ""        # yyyy-MM-dd
-    range_end: str = ""          # yyyy-MM-dd
+    single_date: str = ""
+    range_start: str = ""
+    range_end: str = ""
     specific_dates: List[str] = field(default_factory=list)
 
     def to_days(self) -> List[date]:

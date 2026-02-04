@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from PyQt6.QtWidgets import (
     QWidget, QGroupBox, QFormLayout, QHBoxLayout,
     QLineEdit, QPushButton, QVBoxLayout
@@ -12,6 +10,7 @@ from .date_selector import DateSelectorWidget
 from .session_manager import SessionManager
 from .session_state import SessionState
 from .output_defaults import suggest_output_dir
+from .pc_selector import PcSelectorWidget
 
 
 class SessionPanel(QWidget):
@@ -21,6 +20,7 @@ class SessionPanel(QWidget):
       - Model
       - Output folder
       - CSV dir
+      - Remote PC selection
 
     Output folder default behavior:
       - If user has NOT manually set output: auto-fill to D:\B_AREA_DL_REVIEW\<YYYYMMDD>\
@@ -41,6 +41,10 @@ class SessionPanel(QWidget):
         self.date_selector = DateSelectorWidget()
         form.addRow(self.date_selector)
 
+        # Remote PC selector
+        self.pc_selector = PcSelectorWidget()
+        form.addRow(self.pc_selector)
+
         # Output folder
         out_row = QHBoxLayout()
         self.out_dir = QLineEdit()
@@ -49,7 +53,7 @@ class SessionPanel(QWidget):
         out_row.addWidget(self.browse_out)
         form.addRow("Output folder:", out_row)
 
-        # CSV directory
+        # CSV directory (kept for compatibility / visibility)
         csv_row = QHBoxLayout()
         self.csv_dir = QLineEdit()
         self.browse_csv_dir = QPushButton("Browse…")
@@ -74,6 +78,9 @@ class SessionPanel(QWidget):
         # Date selector emits changed
         self.date_selector.changed.connect(self._on_dates_changed)
 
+        # PC selector emits changed
+        self.pc_selector.changed.connect(self._push_to_session)
+
         # listen to session changes (so both tabs stay in sync)
         self.session.changed.connect(self.apply_session)
 
@@ -92,13 +99,15 @@ class SessionPanel(QWidget):
         if self._updating_ui:
             return
 
-        # Build days from current date selector state (same as we do in _push_to_session)
         ds = self.date_selector.export_state()
         tmp = SessionState(
             model=self.model_edit.text().strip() or "JF2",
             out_dir=self.out_dir.text().strip(),
             out_dir_user_set=self.session.state.out_dir_user_set,
             csv_dir=self.csv_dir.text().strip(),
+
+            selected_pcs=list(self.pc_selector.selected_keys()),
+
             date_mode=ds.get("date_mode", "Single date"),
             single_date=ds.get("single_date", ""),
             range_start=ds.get("range_start", ""),
@@ -107,7 +116,6 @@ class SessionPanel(QWidget):
         )
         days = tmp.to_days()
 
-        # Only auto-fill if the user has NOT set output
         if not self.session.state.out_dir_user_set:
             suggested = suggest_output_dir(days=days)
             self.out_dir.setText(str(suggested))
@@ -123,7 +131,6 @@ class SessionPanel(QWidget):
     def _on_out_dir_user_edited(self) -> None:
         if self._updating_ui:
             return
-        # User typed something -> treat as user-set
         text = self.out_dir.text().strip()
         if text:
             self.session.update(out_dir_user_set=True)
@@ -140,8 +147,6 @@ class SessionPanel(QWidget):
             return
 
         ds = self.date_selector.export_state()
-
-        # Preserve out_dir_user_set from current session unless we explicitly set it
         out_user_set = self.session.state.out_dir_user_set
 
         s = SessionState(
@@ -149,6 +154,9 @@ class SessionPanel(QWidget):
             out_dir=self.out_dir.text().strip(),
             out_dir_user_set=out_user_set,
             csv_dir=self.csv_dir.text().strip(),
+
+            selected_pcs=list(self.pc_selector.selected_keys()),
+
             date_mode=ds.get("date_mode", "Single date"),
             single_date=ds.get("single_date", ""),
             range_start=ds.get("range_start", ""),
@@ -164,6 +172,7 @@ class SessionPanel(QWidget):
             self.out_dir.setText(s.out_dir or "")
             self.csv_dir.setText(s.csv_dir or "")
 
+            # restore date selection
             self.date_selector.import_state({
                 "date_mode": s.date_mode,
                 "single_date": s.single_date,
@@ -171,5 +180,8 @@ class SessionPanel(QWidget):
                 "range_end": s.range_end,
                 "specific_dates": s.specific_dates or [],
             })
+
+            # restore PC selection (default none if empty)
+            self.pc_selector.set_selected_keys(list(getattr(s, "selected_pcs", []) or []))
         finally:
             self._updating_ui = False

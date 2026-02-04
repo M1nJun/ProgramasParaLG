@@ -13,7 +13,12 @@ SETTINGS_FILE = Path(__file__).resolve().parent / "settings.json"
 class Settings:
     # ---- Session-shared ----
     model: str = "JF2"
-    out_dir: str = r"C:\Temp\CropB_Fetch"
+
+    # Let SessionPanel auto-suggest default output (D:\B_AREA_DL_REVIEW\<YYYYMMDD>\)
+    # but still allow user to override.
+    out_dir: str = ""
+
+    # Remote CSV root is per-PC, but we keep this as a UI/default value.
     csv_dir: str = r"D:\Files\Data\Result\Day"
 
     # Date selection persistence
@@ -23,8 +28,12 @@ class Settings:
     range_end: str = ""
     specific_dates: List[str] = field(default_factory=list)
 
+    # ---- Remote PCs (Session) ----
+    selected_pcs: List[str] = field(default_factory=list)
+
     # ---- Fetch tab ----
-    drives_text: str = "E,F,G"
+    # Remote-only: keep for backward-compat but default to empty
+    drives_text: str = ""
     include_activemap: bool = False
 
     # ---- Summary tab ----
@@ -47,6 +56,10 @@ class Settings:
         s.range_end = str(d.get("range_end", s.range_end))
         s.specific_dates = list(d.get("specific_dates", s.specific_dates) or [])
 
+        # ✅ Remote PCs persistence
+        s.selected_pcs = list(d.get("selected_pcs", s.selected_pcs) or [])
+
+        # Backward compat: old configs may still store drives_text
         s.drives_text = str(d.get("drives_text", s.drives_text))
         s.include_activemap = bool(d.get("include_activemap", s.include_activemap))
 

@@ -555,9 +555,9 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher\\date_utils.py',
    'PYMODULE'),
-  ('mavin_fetcher.engine_fetch',
+  ('mavin_fetcher.engine_fetch_remote',
    'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\mavin_fetcher\\engine_fetch.py',
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\engine_fetch_remote.py',
    'PYMODULE'),
   ('mavin_fetcher.engine_summary',
    'C:\\Users\\user\\Desktop\\Github '
@@ -584,13 +584,29 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher\\pairing.py',
    'PYMODULE'),
-  ('mavin_fetcher.path_resolver',
+  ('mavin_fetcher.pc_registry',
    'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\mavin_fetcher\\path_resolver.py',
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\pc_registry.py',
+   'PYMODULE'),
+  ('mavin_fetcher.remote_path_resolver',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\remote_path_resolver.py',
+   'PYMODULE'),
+  ('mavin_fetcher.runtime_paths',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\runtime_paths.py',
    'PYMODULE'),
   ('mavin_fetcher.scanner',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher\\scanner.py',
+   'PYMODULE'),
+  ('mavin_fetcher.smb_paths',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\smb_paths.py',
+   'PYMODULE'),
+  ('mavin_fetcher.smb_probe',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\smb_probe.py',
    'PYMODULE'),
   ('mavin_fetcher.view_index',
    'C:\\Users\\user\\Desktop\\Github '
@@ -608,10 +624,6 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\date_selector.py',
    'PYMODULE'),
-  ('mavin_fetcher_gui.drive_selector',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\drive_selector.py',
-   'PYMODULE'),
   ('mavin_fetcher_gui.fetch_tab',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\fetch_tab.py',
@@ -628,6 +640,10 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\image_preview.py',
    'PYMODULE'),
+  ('mavin_fetcher_gui.interaction_gate',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\interaction_gate.py',
+   'PYMODULE'),
   ('mavin_fetcher_gui.log_widget',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\log_widget.py',
@@ -639,6 +655,14 @@
   ('mavin_fetcher_gui.output_defaults',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\output_defaults.py',
+   'PYMODULE'),
+  ('mavin_fetcher_gui.pc_selector',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\pc_selector.py',
+   'PYMODULE'),
+  ('mavin_fetcher_gui.scroll_wrap',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\scroll_wrap.py',
    'PYMODULE'),
   ('mavin_fetcher_gui.session_manager',
    'C:\\Users\\user\\Desktop\\Github '
