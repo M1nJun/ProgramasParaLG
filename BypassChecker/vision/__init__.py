@@ -1,0 +1,1 @@
+# Vision adapters live under vision/welding and vision/lead

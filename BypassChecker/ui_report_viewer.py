@@ -29,6 +29,7 @@ class ReportViewerWidget(QWidget):
         self._report: CheckReport | None = None
 
         self._build_ui()
+        
 
     def _build_ui(self):
         root = QVBoxLayout()
@@ -103,6 +104,7 @@ class ReportViewerWidget(QWidget):
             f"Rows: {len(report.rows)}  Fail: {fail_count} (missing={missing_count}, bypassed={bypassed_count})"
         )
         self._refresh_table()
+        
 
     def _row_brush(self, r: MeasureRow) -> QBrush:
         if r.is_pass:
