@@ -1,22 +1,30 @@
+# recipe_parser.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
+
 import xml.etree.ElementTree as ET
+
+from vision.lead.recipe_json_parser import parse_lead_recipe_json_file
 
 
 @dataclass(frozen=True)
 class MeasureOccurrence:
-    item_tag: str          # e.g. "MeasureItem_50"
+    item_tag: str          # e.g. "MeasureItem_50" or "JSON[12]"
     index: Optional[int]   # parsed index if available, else None
-    name: str              # original <Name> text
-    bypass: bool           # parsed <Bypass>
+    name: str              # original name
+    bypass: bool           # bypass flag
 
 
 class RecipeParseError(Exception):
     pass
 
+
+# -------------------------
+# Welding XML parser
+# -------------------------
 
 def _parse_measure_item_index(tag: str) -> Optional[int]:
     # Expected: "MeasureItem_0", "MeasureItem_1", ...
@@ -28,7 +36,7 @@ def _parse_measure_item_index(tag: str) -> Optional[int]:
         return None
 
 
-def parse_recipe_measures(recipe_file: Path) -> List[MeasureOccurrence]:
+def _parse_welding_recipe_xml(recipe_file: Path) -> List[MeasureOccurrence]:
     """
     Parses recipe XML:
       <MeasureList>
@@ -38,14 +46,11 @@ def parse_recipe_measures(recipe_file: Path) -> List[MeasureOccurrence]:
         </MeasureItem_0>
         ...
       </MeasureList>
-
-    Returns a list of occurrences (order preserved).
     """
     if not recipe_file.exists():
         raise RecipeParseError(f"Recipe file not found: {recipe_file}")
 
     try:
-        # Your sample recipe files are UTF-8 XML and parse cleanly.
         tree = ET.parse(recipe_file)
         root = tree.getroot()
     except ET.ParseError as e:
@@ -58,12 +63,10 @@ def parse_recipe_measures(recipe_file: Path) -> List[MeasureOccurrence]:
     out: List[MeasureOccurrence] = []
 
     for child in list(measure_list):
-        # child.tag example: "MeasureItem_0"
         name_el = child.find("Name")
         bypass_el = child.find("Bypass")
 
         if name_el is None or bypass_el is None:
-            # Skip malformed items; we can tighten this later if needed
             continue
 
         name = (name_el.text or "").strip()
@@ -74,15 +77,63 @@ def parse_recipe_measures(recipe_file: Path) -> List[MeasureOccurrence]:
                 f"Invalid <Bypass> value {bypass_el.text!r} in {child.tag}"
             )
 
-        bypass = (bypass_text == "true")
-
         out.append(
             MeasureOccurrence(
                 item_tag=child.tag,
                 index=_parse_measure_item_index(child.tag),
                 name=name,
-                bypass=bypass,
+                bypass=(bypass_text == "true"),
             )
         )
 
     return out
+
+
+# -------------------------
+# Lead JSON parser adapter
+# -------------------------
+
+def _parse_lead_recipe_json(recipe_file: Path) -> List[MeasureOccurrence]:
+    """
+    Parses Lead Recipe.json and converts to MeasureOccurrence list.
+    """
+    lead_items = parse_lead_recipe_json_file(recipe_file)
+
+    out: List[MeasureOccurrence] = []
+    for i, m in enumerate(lead_items):
+        out.append(
+            MeasureOccurrence(
+                item_tag=f"JSON[{i}]",
+                index=i,
+                name=m.name,
+                bypass=bool(m.bypass),
+            )
+        )
+    return out
+
+
+# -------------------------
+# Public API (auto-detect)
+# -------------------------
+
+def parse_recipe_measures(recipe_file: Path) -> List[MeasureOccurrence]:
+    """
+    Auto-detect by extension:
+      - .xml => Welding parsing
+      - .json => Lead parsing
+    """
+    suf = recipe_file.suffix.lower()
+
+    if suf == ".xml":
+        return _parse_welding_recipe_xml(recipe_file)
+
+    if suf == ".json":
+        return _parse_lead_recipe_json(recipe_file)
+
+    # If suffix is unknown, try:
+    # - if file name looks like Recipe.json, treat as json
+    # - otherwise default to xml (historic behavior)
+    if recipe_file.name.lower() == "recipe.json":
+        return _parse_lead_recipe_json(recipe_file)
+
+    return _parse_welding_recipe_xml(recipe_file)

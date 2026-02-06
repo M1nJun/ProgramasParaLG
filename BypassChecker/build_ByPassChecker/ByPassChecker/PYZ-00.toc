@@ -325,6 +325,9 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\BypassChecker\\config\\pcs_schema.py',
    'PYMODULE'),
+  ('configparser',
+   'C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\configparser.py',
+   'PYMODULE'),
   ('contextlib',
    'C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\contextlib.py',
    'PYMODULE'),
@@ -1244,6 +1247,32 @@
    'PYMODULE'),
   ('urllib.response',
    'C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\urllib\\response.py',
+   'PYMODULE'),
+  ('vision',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\__init__.py',
+   'PYMODULE'),
+  ('vision.base',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\base.py',
+   'PYMODULE'),
+  ('vision.factory',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\factory.py',
+   'PYMODULE'),
+  ('vision.lead', '-', 'PYMODULE'),
+  ('vision.lead.adapter',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\lead\\adapter.py',
+   'PYMODULE'),
+  ('vision.lead.recipe_json_parser',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\lead\\recipe_json_parser.py',
+   'PYMODULE'),
+  ('vision.welding', '-', 'PYMODULE'),
+  ('vision.welding.adapter',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\welding\\adapter.py',
    'PYMODULE'),
   ('workers',
    'C:\\Users\\user\\Desktop\\Github '
