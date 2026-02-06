@@ -29,7 +29,6 @@ class ReportViewerWidget(QWidget):
         self._report: CheckReport | None = None
 
         self._build_ui()
-        
 
     def _build_ui(self):
         root = QVBoxLayout()
@@ -87,6 +86,56 @@ class ReportViewerWidget(QWidget):
         root.addWidget(self.table)
         self.setLayout(root)
 
+    # -----------------------------
+    # Report/row compatibility layer
+    # -----------------------------
+    def _report_schema(self, report: CheckReport) -> str:
+        # checker.CheckReport has schema="welding"|"lead", but tolerate older objects.
+        return str(getattr(report, "schema", "welding") or "welding").lower()
+
+    def _required_counts(self, report: CheckReport) -> dict[str, int]:
+        rc = getattr(report, "required_counts", None)
+        return rc if isinstance(rc, dict) else {}
+
+    def _get_required(self, report: CheckReport, *, legacy_attr: str | None, key: str) -> int:
+        # Prefer legacy attribute if present (backward compatible)
+        if legacy_attr and hasattr(report, legacy_attr):
+            try:
+                return int(getattr(report, legacy_attr))
+            except Exception:
+                pass
+        # New schema
+        try:
+            return int(self._required_counts(report).get(key, 0))
+        except Exception:
+            return 0
+
+    def _required_summary_text(self, report: CheckReport) -> str:
+        schema = self._report_schema(report)
+
+        if schema == "lead":
+            anode = self._get_required(report, legacy_attr=None, key="Anode")
+            cathode = self._get_required(report, legacy_attr=None, key="Cathode")
+            shared = self._get_required(report, legacy_attr=None, key="Shared")
+            return f"Required: anode={anode}, cathode={cathode}, shared={shared}"
+
+        # default: welding (and also older builds that assumed upper/lower/both)
+        upper = self._get_required(report, legacy_attr="required_upper", key="Upper")
+        lower = self._get_required(report, legacy_attr="required_lower", key="Lower")
+        both = self._get_required(report, legacy_attr="required_both", key="Both")
+        return f"Required: upper={upper}, lower={lower}, both={both}"
+
+    def _row_group_label(self, r: MeasureRow) -> str:
+        # New name is r.group; older UI expected r.side.
+        val = getattr(r, "side", None)
+        if isinstance(val, str) and val.strip():
+            return val
+        val = getattr(r, "group", "")
+        return val if isinstance(val, str) else ""
+
+    # -----------------------------
+    # Main API
+    # -----------------------------
     def set_report(self, report: CheckReport | None):
         self._report = report
         if report is None:
@@ -100,11 +149,10 @@ class ReportViewerWidget(QWidget):
 
         self.summary_label.setText(
             f"Recipe: {report.recipe_name} (folder {report.recipe_id_3digit}) | "
-            f"Required: upper={report.required_upper}, lower={report.required_lower}, both={report.required_both} | "
+            f"{self._required_summary_text(report)} | "
             f"Rows: {len(report.rows)}  Fail: {fail_count} (missing={missing_count}, bypassed={bypassed_count})"
         )
         self._refresh_table()
-        
 
     def _row_brush(self, r: MeasureRow) -> QBrush:
         if r.is_pass:
@@ -136,7 +184,7 @@ class ReportViewerWidget(QWidget):
             items = [
                 QTableWidgetItem(status_text),
                 QTableWidgetItem(r.display_name),
-                QTableWidgetItem(r.side),
+                QTableWidgetItem(self._row_group_label(r)),
                 QTableWidgetItem(r.normalized_key),
                 QTableWidgetItem(str(r.expected_count)),
                 QTableWidgetItem(str(r.found_count)),
