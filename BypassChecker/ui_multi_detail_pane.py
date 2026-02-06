@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 
 from checker import CheckReport
 from pc_config import PCEntry
@@ -15,7 +15,7 @@ class MultiDetailPane(QWidget):
     Bottom pane for MultiPCWidget:
       - shows selected PC header
       - shows per-measure details via ReportViewerWidget
-      - provides a button to open the full details dialog (re-check optional there)
+      - (Dialog button removed; details are shown here only)
     """
     def __init__(self, reports_dir: Path):
         super().__init__()
@@ -27,9 +27,6 @@ class MultiDetailPane(QWidget):
         self.title_label = QLabel("Select a PC row to see details.")
         self.viewer = ReportViewerWidget(reports_dir=self.reports_dir)
 
-        self.open_dialog_btn = QPushButton("Open Details Dialog")
-        self.open_dialog_btn.setEnabled(False)
-
         self._build_ui()
 
     def _build_ui(self):
@@ -40,7 +37,6 @@ class MultiDetailPane(QWidget):
         header = QHBoxLayout()
         header.addWidget(self.title_label)
         header.addStretch()
-        header.addWidget(self.open_dialog_btn)
 
         root.addLayout(header)
         root.addWidget(self.viewer)
@@ -53,21 +49,17 @@ class MultiDetailPane(QWidget):
         if pc is None:
             self.title_label.setText("Select a PC row to see details.")
             self.viewer.set_report(None)
-            self.open_dialog_btn.setEnabled(False)
             return
 
         if error:
             self.title_label.setText(f"{pc.key} ({pc.ip}) — ERROR: {error}")
             self.viewer.set_report(None)
-            self.open_dialog_btn.setEnabled(True)
             return
 
         if report is None:
             self.title_label.setText(f"{pc.key} ({pc.ip}) — No cached report.")
             self.viewer.set_report(None)
-            self.open_dialog_btn.setEnabled(True)
             return
 
         self.title_label.setText(f"{pc.key} ({pc.ip}) — Recipe: {report.recipe_name} / {report.recipe_id_3digit}")
         self.viewer.set_report(report)
-        self.open_dialog_btn.setEnabled(True)

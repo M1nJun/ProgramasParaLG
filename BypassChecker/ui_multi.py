@@ -12,8 +12,6 @@ from PyQt6.QtWidgets import (
 )
 
 from pc_config import load_pcs_config, PCEntry
-from multi_pc_checker import PCCheckResult
-from ui_pc_details import PCDetailsDialog
 from workers import MultiPCCheckWorker
 from multi_exporter_csv import export_all_pcs_summary_csv
 
@@ -104,11 +102,10 @@ class MultiPCWidget(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
 
-        self.table.cellDoubleClicked.connect(self.open_selected_details)
+        # ✅ keep only single-click selection -> bottom details
         self.table.itemSelectionChanged.connect(self._on_row_selected)
 
         self.detail_pane = MultiDetailPane(reports_dir=self.reports_dir)
-        self.detail_pane.open_dialog_btn.clicked.connect(self._open_selected_details_dialog)
 
         split = QSplitter(Qt.Orientation.Vertical)
         split.addWidget(self.table)
@@ -131,7 +128,7 @@ class MultiPCWidget(QWidget):
         self.export_btn.setEnabled(False)
         self.status_label.setText(
             f"Vision: {self._vision_mode()} — Press 'Check All PCs' to run. "
-            f"(Select a row to see details below; double-click for dialog.)"
+            f"(Select a row to see details below.)"
         )
         self.detail_pane.set_selection(None, None)
 
@@ -279,7 +276,7 @@ class MultiPCWidget(QWidget):
             self.table.resizeRowsToContents()
             self.status_label.setText(
                 f"Done ({self._vision_mode()}). PASS={pass_count}, FAIL={fail_count}, ERROR={err_count}. "
-                f"(Select a row to see details below; double-click for dialog.)"
+                f"(Select a row to see details below.)"
             )
             self.export_btn.setEnabled(bool(self._results))
 
@@ -324,12 +321,6 @@ class MultiPCWidget(QWidget):
             self._log_crash("_on_row_selected", e)
             self.detail_pane.set_selection(None, None)
 
-    def _open_selected_details_dialog(self):
-        row = self.table.currentRow()
-        if row < 0:
-            return
-        self.open_selected_details(row, 0)
-
     def export_summary(self):
         if not self._results:
             QMessageBox.information(self, "Export", "No results to export yet. Run 'Check All PCs' first.")
@@ -339,26 +330,3 @@ class MultiPCWidget(QWidget):
             QMessageBox.information(self, "Export", f"Summary CSV saved:\n{out_path}")
         except Exception as e:
             QMessageBox.critical(self, "Export Failed", str(e))
-
-    def open_selected_details(self, row: int, col: int):
-        if row < 0 or row >= self.table.rowCount():
-            return
-
-        pc_item = self.table.item(row, 1)
-        if pc_item is None:
-            return
-        pc_key = pc_item.text()
-
-        pc = next((p for p in self._pcs if p.key == pc_key), None)
-        if pc is None:
-            QMessageBox.information(self, "Details", "PC not found in pcs.json.")
-            return
-
-        dlg = PCDetailsDialog(
-            pc=pc,
-            kickout_dir=self._kickout_dir(),
-            reports_dir=self.reports_dir,
-            vision_mode=self._vision_mode(),
-            parent=self,
-        )
-        dlg.exec()

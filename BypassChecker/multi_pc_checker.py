@@ -12,9 +12,6 @@ from recipe_parser import parse_recipe_measures
 from kickout_loader import load_kickout_list_xlsx
 from checker import check_kickout, CheckReport
 
-from vision.base import VisionContext
-from vision.factory import get_adapter
-
 
 @dataclass(frozen=True)
 class PCCheckResult:
@@ -25,16 +22,15 @@ class PCCheckResult:
 
 def check_one_pc(pc: PCEntry, kickout_dir: Path, vision_mode: str) -> PCCheckResult:
     try:
-        adapter = get_adapter(vision_mode)
-        ctx = VisionContext(name=vision_mode, kickout_dir=kickout_dir)
-
         remote = RemoteVisionPC(ip=pc.ip, share_name=pc.share_name)
 
-        info = read_recipe_info(adapter.preference_ini(remote))
-        recipe_path = adapter.recipe_file(remote, info)
+        info = read_recipe_info(remote.preference_ini)
+        recipe_path = remote.recipe_file(info.recipe_id_3digit, info.recipe_name)
         measures = parse_recipe_measures(recipe_path)
 
-        kickout_path = adapter.kickout_xlsx(ctx, info)
+        kickout_path = kickout_dir / f"{info.recipe_name}.xlsx"
+
+        # Auto sheet (first sheet) unless you later want strict sheet naming
         kickout = load_kickout_list_xlsx(kickout_path, sheet_name=None)
 
         report = check_kickout(

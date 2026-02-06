@@ -1210,10 +1210,6 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\BypassChecker\\ui_app.py',
    'PYMODULE'),
-  ('ui_crash_log',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\ui_crash_log.py',
-   'PYMODULE'),
   ('ui_filters',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\BypassChecker\\ui_filters.py',
@@ -1225,10 +1221,6 @@
   ('ui_multi_detail_pane',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\BypassChecker\\ui_multi_detail_pane.py',
-   'PYMODULE'),
-  ('ui_pc_details',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\ui_pc_details.py',
    'PYMODULE'),
   ('ui_report_viewer',
    'C:\\Users\\user\\Desktop\\Github '
@@ -1252,28 +1244,6 @@
    'PYMODULE'),
   ('urllib.response',
    'C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\urllib\\response.py',
-   'PYMODULE'),
-  ('vision',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\__init__.py',
-   'PYMODULE'),
-  ('vision.base',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\base.py',
-   'PYMODULE'),
-  ('vision.factory',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\factory.py',
-   'PYMODULE'),
-  ('vision.lead', '-', 'PYMODULE'),
-  ('vision.lead.adapter',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\lead\\adapter.py',
-   'PYMODULE'),
-  ('vision.welding', '-', 'PYMODULE'),
-  ('vision.welding.adapter',
-   'C:\\Users\\user\\Desktop\\Github '
-   'Repo\\ProgramasParaLG\\BypassChecker\\vision\\welding\\adapter.py',
    'PYMODULE'),
   ('workers',
    'C:\\Users\\user\\Desktop\\Github '
