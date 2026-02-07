@@ -8,6 +8,19 @@ from checker import CheckReport
 from row_presenter import occurrences_text
 
 
+def _row_group_label(r) -> str:
+    """
+    Keep CSV output consistent with the UI:
+    - Prefer r.side (legacy)
+    - Fallback to r.group (newer)
+    """
+    val = getattr(r, "side", None)
+    if isinstance(val, str) and val.strip():
+        return val
+    val = getattr(r, "group", "")
+    return val if isinstance(val, str) else ""
+
+
 def export_report_csv(report: CheckReport, out_dir: Path, show_all_occurrences: bool = True) -> Path:
     """
     Writes a timestamped CSV report. One row per required measure.
@@ -39,7 +52,7 @@ def export_report_csv(report: CheckReport, out_dir: Path, show_all_occurrences: 
             w.writerow([
                 status,
                 r.display_name,
-                r.side,
+                _row_group_label(r),
                 r.normalized_key,
                 r.expected_count,
                 r.found_count,
