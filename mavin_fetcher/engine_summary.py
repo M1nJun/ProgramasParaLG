@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from .b_area_summary import summarize_b_area, REGIONS
+from .engine_summary_groups import group_paths
 
 LogFn = Optional[Callable[[str], None]]
 ProgressFn = Optional[Callable[[int, int], None]]  # (done_files, total_files)
@@ -30,10 +31,9 @@ def _progress(fn: ProgressFn, done: int, total: int) -> None:
 def _format_text(summary: dict, top_n: int) -> str:
     """
     Simple readable text fallback.
-    GUI will use the table.
+    GUI will use the tables.
     """
     classes = summary["classes"]
-    # sort by cell count desc
     items = sorted(classes.items(), key=lambda kv: kv[1]["cells"], reverse=True)[:top_n]
 
     lines = []
@@ -43,10 +43,44 @@ def _format_text(summary: dict, top_n: int) -> str:
         occ = payload["occurrences"]
         cells = payload["cells"]
         by_region = payload["by_region"]
-        lines.append(f" - {cls}: cells={cells}, occurrences={occ}, "
-                     f"LBL={by_region['LOWER_B_L']}, LBR={by_region['LOWER_B_R']}, "
-                     f"UBL={by_region['UPPER_B_L']}, UBR={by_region['UPPER_B_R']}")
+        lines.append(
+            f" - {cls}: cells={cells}, occurrences={occ}, "
+            f"LBL={by_region['LOWER_B_L']}, LBR={by_region['LOWER_B_R']}, "
+            f"UBL={by_region['UPPER_B_L']}, UBR={by_region['UPPER_B_R']}"
+        )
+
+    # tiny hint that breakdown exists (tables show details)
+    if summary.get("by_line"):
+        lines.append(f"\n[BREAKDOWN] Lines: {len(summary['by_line'])}")
+    if summary.get("by_pc"):
+        lines.append(f"[BREAKDOWN] PCs: {len(summary['by_pc'])}")
+
     return "\n".join(lines)
+
+
+def _to_data(paths: List[Path]) -> dict:
+    """
+    Build the same summary payload as before, for an arbitrary list of files.
+    This lets us reuse the same logic for Overall / By PC / By Line.
+    """
+    b = summarize_b_area(paths)
+
+    classes: dict = {}
+    for cls, by_region in b.region_counts.items():
+        occurrences = sum(by_region.get(r, 0) for r in REGIONS)
+        cells = int(b.cell_counts.get(cls, 0))
+        classes[cls] = {
+            "cells": cells,
+            "occurrences": occurrences,
+            "by_region": dict(by_region),
+        }
+
+    return {
+        "total_rows": b.total_rows,
+        "total_cells": b.total_cells,
+        "regions": list(REGIONS),
+        "classes": classes,
+    }
 
 
 def summarize_files(
@@ -74,24 +108,14 @@ def summarize_files(
             existing.append(p)
         _progress(progress, i, total)
 
-    b = summarize_b_area(existing)
+    # Overall
+    data = _to_data(existing)
 
-    classes: dict = {}
-    for cls, by_region in b.region_counts.items():
-        occurrences = sum(by_region.get(r, 0) for r in REGIONS)
-        cells = int(b.cell_counts.get(cls, 0))
-        classes[cls] = {
-            "cells": cells,
-            "occurrences": occurrences,
-            "by_region": dict(by_region),
-        }
+    # NEW: By-PC and By-Line breakdown from cached filename prefixes and line tags
+    by_pc_paths, by_line_paths = group_paths(existing)
 
-    data = {
-        "total_rows": b.total_rows,
-        "total_cells": b.total_cells,
-        "regions": list(REGIONS),
-        "classes": classes,  # {class: {cells, occurrences, by_region{region:count}}}
-    }
+    data["by_pc"] = {k: _to_data(v) for k, v in sorted(by_pc_paths.items(), key=lambda kv: kv[0].lower())}
+    data["by_line"] = {k: _to_data(v) for k, v in sorted(by_line_paths.items(), key=lambda kv: kv[0].lower())}
 
     text = _format_text(data, top_n=int(top_n))
     _log(log, "[INFO] Summary computed.")
