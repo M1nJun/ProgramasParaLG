@@ -6,6 +6,7 @@ from typing import List
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
+from mavin_fetcher.area_spec import area_from_id
 from mavin_fetcher.date_utils import parse_ymd, date_range_inclusive, parse_dates_csv
 from mavin_fetcher.pc_registry import load_registry
 from mavin_fetcher.engine_fetch_remote import fetch_images_remote
@@ -19,6 +20,7 @@ class FetchTaskConfig:
     model: str
     selected_pcs: List[str]
     include_activemap: bool
+    area_id: str  # "A" or "B"
 
 
 class FetchWorker(QThread):
@@ -69,12 +71,15 @@ class FetchWorker(QThread):
             days = self._resolve_days()
             out_dir = Path(self.cfg.out_dir).expanduser().resolve()
 
+            area = area_from_id(self.cfg.area_id)
+
             stats = fetch_images_remote(
                 pcs=pcs,
                 days=days,
                 out_dir=out_dir,
                 model=self.cfg.model,
                 include_activemap=self.cfg.include_activemap,
+                area=area,
                 log=self.log.emit,
                 progress=lambda d, t: self._emit_progress(d, t),
                 detail_progress=lambda d, t, c, f: self._emit_detail(d, t, c, f),
@@ -85,7 +90,10 @@ class FetchWorker(QThread):
                 self.done.emit(False, "Cancelled.")
                 return
 
-            msg = f"Remote fetch done. Copied={stats.total_copied}, Overwrote={stats.total_overwritten}, MissingPCs={stats.missing_pcs}"
+            msg = (
+                f"Remote fetch done ({area.display_name}). "
+                f"Copied={stats.total_copied}, Overwrote={stats.total_overwritten}, MissingPCs={stats.missing_pcs}"
+            )
             self.done.emit(True, msg)
 
         except Exception as e:

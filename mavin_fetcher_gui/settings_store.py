@@ -10,42 +10,30 @@ SETTINGS_FILE = Path(__file__).resolve().parent / "settings.json"
 
 
 @dataclass
-class Settings:
-    # ---- Session-shared ----
+class AreaSettings:
+    # Session
     model: str = "JF2"
-
-    # Let SessionPanel auto-suggest default output (D:\B_AREA_DL_REVIEW\<YYYYMMDD>\)
-    # but still allow user to override.
     out_dir: str = ""
-
-    # Remote CSV root is per-PC, but we keep this as a UI/default value.
     csv_dir: str = r"D:\Files\Data\Result\Day"
 
-    # Date selection persistence
     date_mode: str = "Single date"
     single_date: str = ""
     range_start: str = ""
     range_end: str = ""
     specific_dates: List[str] = field(default_factory=list)
 
-    # ---- Remote PCs (Session) ----
     selected_pcs: List[str] = field(default_factory=list)
 
-    # ---- Fetch tab ----
-    # Remote-only: keep for backward-compat but default to empty
-    drives_text: str = ""
+    # Fetch
     include_activemap: bool = False
 
-    # ---- Summary tab ----
+    # Summary
     summary_csv_paths: List[str] = field(default_factory=list)
     summary_top_n: int = 20
 
-    # ---- Window ----
-    window_geometry_b64: str = ""
-
     @staticmethod
-    def from_dict(d: Dict[str, Any]) -> "Settings":
-        s = Settings()
+    def from_dict(d: Dict[str, Any]) -> "AreaSettings":
+        s = AreaSettings()
         s.model = str(d.get("model", s.model))
         s.out_dir = str(d.get("out_dir", s.out_dir))
         s.csv_dir = str(d.get("csv_dir", s.csv_dir))
@@ -56,21 +44,53 @@ class Settings:
         s.range_end = str(d.get("range_end", s.range_end))
         s.specific_dates = list(d.get("specific_dates", s.specific_dates) or [])
 
-        # ✅ Remote PCs persistence
         s.selected_pcs = list(d.get("selected_pcs", s.selected_pcs) or [])
 
-        # Backward compat: old configs may still store drives_text
-        s.drives_text = str(d.get("drives_text", s.drives_text))
         s.include_activemap = bool(d.get("include_activemap", s.include_activemap))
 
         s.summary_csv_paths = list(d.get("summary_csv_paths", s.summary_csv_paths) or [])
         s.summary_top_n = int(d.get("summary_top_n", s.summary_top_n))
+        return s
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class Settings:
+    # Per-area settings (new)
+    area_a: AreaSettings = field(default_factory=AreaSettings)
+    area_b: AreaSettings = field(default_factory=AreaSettings)
+
+    # Window
+    window_geometry_b64: str = ""
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "Settings":
+        s = Settings()
+
+        # New format
+        if isinstance(d.get("area_a"), dict):
+            s.area_a = AreaSettings.from_dict(d["area_a"])
+        if isinstance(d.get("area_b"), dict):
+            s.area_b = AreaSettings.from_dict(d["area_b"])
+
+        # Backward compat (old single-session format):
+        # if area_a/area_b were not present, hydrate both from top-level keys
+        if "area_a" not in d and "area_b" not in d:
+            legacy = AreaSettings.from_dict(d)
+            s.area_a = AreaSettings.from_dict(legacy.to_dict())
+            s.area_b = AreaSettings.from_dict(legacy.to_dict())
 
         s.window_geometry_b64 = str(d.get("window_geometry_b64", s.window_geometry_b64))
         return s
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "area_a": self.area_a.to_dict(),
+            "area_b": self.area_b.to_dict(),
+            "window_geometry_b64": self.window_geometry_b64,
+        }
 
 
 def load_settings() -> Settings:

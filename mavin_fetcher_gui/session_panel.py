@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import (
     QLineEdit, QPushButton, QVBoxLayout
 )
 
+from mavin_fetcher.area_spec import AreaSpec, AREA_B
+
 from .file_pickers import pick_folder
 from .date_selector import DateSelectorWidget
 from .session_manager import SessionManager
@@ -15,7 +17,7 @@ from .pc_selector import PcSelectorWidget
 
 class SessionPanel(QWidget):
     """
-    Shared session UI:
+    Shared session UI per Area:
       - Date selection
       - Model
       - Output folder
@@ -23,16 +25,17 @@ class SessionPanel(QWidget):
       - Remote PC selection
 
     Output folder default behavior:
-      - If user has NOT manually set output: auto-fill to D:\B_AREA_DL_REVIEW\<YYYYMMDD>\
+      - If user has NOT manually set output: auto-fill to default base for Area
       - If user browsed or edited output: never auto-overwrite.
     """
 
-    def __init__(self, session: SessionManager):
+    def __init__(self, session: SessionManager, *, area: AreaSpec = AREA_B):
         super().__init__()
         self.session = session
+        self.area = area
         self._updating_ui = False
 
-        box = QGroupBox("Session (shared)")
+        box = QGroupBox(f"Session ({self.area.display_name})")
         form = QFormLayout(box)
 
         self.model_edit = QLineEdit()
@@ -81,7 +84,7 @@ class SessionPanel(QWidget):
         # PC selector emits changed
         self.pc_selector.changed.connect(self._push_to_session)
 
-        # listen to session changes (so both tabs stay in sync)
+        # listen to session changes
         self.session.changed.connect(self.apply_session)
 
         # initial apply
@@ -91,7 +94,6 @@ class SessionPanel(QWidget):
         self._maybe_apply_default_output()
 
     def _on_dates_changed(self) -> None:
-        # If user hasn't chosen output, update default output path based on dates
         self._maybe_apply_default_output()
         self._push_to_session()
 
@@ -117,14 +119,13 @@ class SessionPanel(QWidget):
         days = tmp.to_days()
 
         if not self.session.state.out_dir_user_set:
-            suggested = suggest_output_dir(days=days)
+            suggested = suggest_output_dir(area=self.area, days=days)
             self.out_dir.setText(str(suggested))
 
     def _pick_out(self) -> None:
         picked = pick_folder(self, "Select output folder", self.out_dir.text().strip())
         if picked:
             self.out_dir.setText(picked)
-            # Mark user-set
             self.session.update(out_dir_user_set=True, out_dir=picked)
             self._push_to_session()
 
@@ -172,7 +173,6 @@ class SessionPanel(QWidget):
             self.out_dir.setText(s.out_dir or "")
             self.csv_dir.setText(s.csv_dir or "")
 
-            # restore date selection
             self.date_selector.import_state({
                 "date_mode": s.date_mode,
                 "single_date": s.single_date,
@@ -181,7 +181,6 @@ class SessionPanel(QWidget):
                 "specific_dates": s.specific_dates or [],
             })
 
-            # restore PC selection (default none if empty)
             self.pc_selector.set_selected_keys(list(getattr(s, "selected_pcs", []) or []))
         finally:
             self._updating_ui = False

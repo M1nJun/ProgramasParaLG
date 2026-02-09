@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable
+
+from .area_spec import AreaSpec, AREA_B, area_from_id
 
 
 IMAGE_DRIVES = ["E", "F", "G"]
@@ -25,8 +26,8 @@ def csv_base(ip: str) -> Path:
     return unc_root(ip, CSV_DRIVE) / "Files" / "Data" / "Result" / "Day"
 
 
-def crop_b_root(image_base_dir: Path, model: str, day: date) -> Path:
-    # ...\JF2\YYYY\MM\DD\Mavin\Crop_B
+def crop_root(image_base_dir: Path, model: str, day: date, area: AreaSpec) -> Path:
+    # ...\JF2\YYYY\MM\DD\Mavin\Crop_A or Crop_B
     return (
         image_base_dir
         / model
@@ -34,5 +35,19 @@ def crop_b_root(image_base_dir: Path, model: str, day: date) -> Path:
         / f"{day.month:02d}"
         / f"{day.day:02d}"
         / "Mavin"
-        / "Crop_B"
+        / area.crop_dirname
     )
+
+
+# -------------------------
+# Backwards-compatible APIs
+# -------------------------
+
+def crop_b_root(image_base_dir: Path, model: str, day: date) -> Path:
+    # existing code calls this; keep it working
+    return crop_root(image_base_dir, model, day, AREA_B)
+
+
+def crop_a_root(image_base_dir: Path, model: str, day: date) -> Path:
+    # convenience for future use
+    return crop_root(image_base_dir, model, day, area_from_id("A"))

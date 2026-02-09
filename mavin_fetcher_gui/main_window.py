@@ -3,13 +3,26 @@ from __future__ import annotations
 from PyQt6.QtCore import QByteArray
 from PyQt6.QtWidgets import QMainWindow, QTabWidget
 
-from .fetch_tab import FetchTab
-from .summary_tab import SummaryTab
-from .viewer_tab import ViewerTab
-from .scroll_wrap import wrap_scroll
-from .settings_store import load_settings, save_settings, Settings
+from mavin_fetcher.area_spec import AREA_A, AREA_B
+
+from .area_workspace import AreaWorkspace
 from .session_manager import SessionManager
 from .session_state import SessionState
+from .settings_store import load_settings, save_settings, Settings
+
+
+def _session_state_from_area_settings(a) -> SessionState:
+    return SessionState(
+        model=a.model or "JF2",
+        out_dir=a.out_dir or "",
+        csv_dir=getattr(a, "csv_dir", r"D:\Files\Data\Result\Day"),
+        selected_pcs=list(getattr(a, "selected_pcs", []) or []),
+        date_mode=a.date_mode or "Single date",
+        single_date=a.single_date or "",
+        range_start=a.range_start or "",
+        range_end=a.range_end or "",
+        specific_dates=a.specific_dates or [],
+    )
 
 
 class MainWindow(QMainWindow):
@@ -19,36 +32,20 @@ class MainWindow(QMainWindow):
 
         self._settings = load_settings()
 
-        # Build shared session from saved settings
-        session_state = SessionState(
-            model=self._settings.model or "JF2",
-            out_dir=self._settings.out_dir or "",
-            csv_dir=getattr(self._settings, "csv_dir", r"D:\Files\Data\Result\Day"),
-            selected_pcs=list(getattr(self._settings, "selected_pcs", []) or []),
-            date_mode=self._settings.date_mode or "Single date",
-            single_date=self._settings.single_date or "",
-            range_start=self._settings.range_start or "",
-            range_end=self._settings.range_end or "",
-            specific_dates=self._settings.specific_dates or [],
-        )
-        self.session = SessionManager(session_state)
+        # Two independent sessions (A and B)
+        self.session_a = SessionManager(_session_state_from_area_settings(self._settings.area_a))
+        self.session_b = SessionManager(_session_state_from_area_settings(self._settings.area_b))
 
-        # Real tab widgets (keep references!)
-        self.fetch_tab = FetchTab(self.session)
-        self.summary_tab = SummaryTab(self.session)
-        self.viewer_tab = ViewerTab(self.session)
+        # Area workspaces
+        self.area_a_ws = AreaWorkspace(area=AREA_A, session=self.session_a)
+        self.area_b_ws = AreaWorkspace(area=AREA_B, session=self.session_b)
 
-        # Wrap each tab in a scroll area so the whole page can scroll
+        # Top-level tabs: A Area / B Area
         tabs = QTabWidget()
-        tabs.addTab(wrap_scroll(self.fetch_tab), "Fetch")
-        tabs.addTab(wrap_scroll(self.summary_tab), "Summary")
-        tabs.addTab(wrap_scroll(self.viewer_tab), "Viewer")
+        tabs.addTab(self.area_a_ws, "A Area")
+        tabs.addTab(self.area_b_ws, "B Area")
         self.setCentralWidget(tabs)
-
         self._tabs = tabs
-
-        # Connect summary -> viewer jump
-        self.summary_tab.class_selected.connect(self._jump_to_viewer)
 
         # Restore window geometry
         if self._settings.window_geometry_b64:
@@ -60,40 +57,20 @@ class MainWindow(QMainWindow):
         else:
             self.resize(900, 650)
 
-        # Apply non-session settings to tabs
-        self.fetch_tab.apply_settings(self._settings)
-        self.summary_tab.apply_settings(self._settings)
-
-    def _jump_to_viewer(self, class_key: str) -> None:
-        # Switch to viewer tab and ask it to select the class
-        # Note: wrapped in scroll area, but we still set current tab correctly by index.
-        self._tabs.setCurrentIndex(2)
-        self.viewer_tab.show_class_key(class_key)
+        # Apply per-area settings to the workspace tabs (fetch/summary internal controls)
+        self.area_a_ws.apply_settings(self._settings.area_a)
+        self.area_b_ws.apply_settings(self._settings.area_b)
 
     def closeEvent(self, event) -> None:
         merged = Settings.from_dict(self._settings.to_dict())
 
-        # session -> settings
-        s = self.session.state
-        merged.model = s.model
-        merged.out_dir = s.out_dir
-        merged.csv_dir = s.csv_dir
-        merged.selected_pcs = list(getattr(s, "selected_pcs", []) or [])
-        merged.date_mode = s.date_mode
-        merged.single_date = s.single_date
-        merged.range_start = s.range_start
-        merged.range_end = s.range_end
-        merged.specific_dates = s.specific_dates or []
+        # Pull settings from A workspace
+        a_settings = self.area_a_ws.collect_settings()
+        merged.area_a = a_settings
 
-        # per-tab settings
-        fetch_state = self.fetch_tab.collect_settings()
-        if "drives_text" in fetch_state:
-            merged.drives_text = fetch_state.get("drives_text", merged.drives_text)
-        merged.include_activemap = bool(fetch_state.get("include_activemap", merged.include_activemap))
-
-        sum_state = self.summary_tab.collect_settings()
-        merged.summary_csv_paths = sum_state.get("summary_csv_paths", []) or []
-        merged.summary_top_n = int(sum_state.get("summary_top_n", merged.summary_top_n))
+        # Pull settings from B workspace
+        b_settings = self.area_b_ws.collect_settings()
+        merged.area_b = b_settings
 
         # window geometry
         try:

@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QMessageBox, QGroupBox, QTabWidget
 )
 
+from mavin_fetcher.area_spec import AreaSpec, AREA_B
 from mavin_fetcher.csv_autofind import find_csvs_for_days, flatten_paths
 
 from .file_pickers import pick_files
@@ -24,17 +25,19 @@ from .session_manager import SessionManager
 class SummaryTab(QWidget):
     class_selected = pyqtSignal(str)
 
-    def __init__(self, session: SessionManager):
+    def __init__(self, session: SessionManager, *, area: AreaSpec = AREA_B):
         super().__init__()
 
         self.session = session
+        self.area = area
+
         self.worker: SummaryWorker | None = None
         self.csv_fetcher: RemoteCsvFetchWorker | None = None
 
         root = QVBoxLayout(self)
         root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.session_panel = SessionPanel(self.session)
+        self.session_panel = SessionPanel(self.session, area=self.area)
         root.addWidget(self.session_panel)
 
         inputs_box = QGroupBox("Summary")

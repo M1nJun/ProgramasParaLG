@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QComboBox, QMessageBox
 )
 
+from mavin_fetcher.area_spec import AreaSpec, AREA_B
 from mavin_fetcher.view_index import ViewIndex, resolve_folder_for_class_key, OccurrenceItem
 from mavin_fetcher.labeling.pathing import human_root_from_output
 from mavin_fetcher.labeling.label_engine import apply_label, undo as undo_label
@@ -24,9 +25,10 @@ from .status_bar import StatusBarLabel
 
 
 class ViewerTab(QWidget):
-    def __init__(self, session: SessionManager):
+    def __init__(self, session: SessionManager, *, area: AreaSpec = AREA_B):
         super().__init__()
         self.session = session
+        self.area = area
 
         self._index: Optional[ViewIndex] = None
         self._worker: Optional[ViewerWorker] = None
@@ -56,7 +58,7 @@ class ViewerTab(QWidget):
         # Filters
         filt = QHBoxLayout()
         self.region_filter = QComboBox()
-        self.region_filter.addItems(["All", "LOWER_B_L", "LOWER_B_R", "UPPER_B_L", "UPPER_B_R"])
+        self.region_filter.addItems(["All", *list(self.area.regions)])
         self.map_filter = QComboBox()
         self.map_filter.addItems(["SourceMap", "ActiveMap"])  # default SourceMap
         self.search = QLineEdit()

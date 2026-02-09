@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import (
     QProgressBar, QMessageBox, QApplication
 )
 
+from mavin_fetcher.area_spec import AreaSpec, AREA_B
+
 from .log_widget import LogWidget
 from .fetch_worker import FetchWorker, FetchTaskConfig
 from .session_panel import SessionPanel
@@ -14,17 +16,18 @@ from .session_manager import SessionManager
 
 
 class FetchTab(QWidget):
-    def __init__(self, session: SessionManager):
+    def __init__(self, session: SessionManager, *, area: AreaSpec = AREA_B):
         super().__init__()
 
         self.session = session
+        self.area = area
         self.worker: FetchWorker | None = None
 
         root = QVBoxLayout(self)
         root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Shared session panel (includes PC selector)
-        self.session_panel = SessionPanel(self.session)
+        # Session panel (area-aware)
+        self.session_panel = SessionPanel(self.session, area=self.area)
         root.addWidget(self.session_panel)
 
         self.include_active = QCheckBox("Include ActiveMap")
@@ -36,7 +39,6 @@ class FetchTab(QWidget):
         self.cancel_btn = QPushButton("Cancel")
         self.cancel_btn.setEnabled(False)
 
-        # Prevent Enter/Space default-button weirdness
         self.run_btn.setAutoDefault(False)
         self.run_btn.setDefault(False)
         self.cancel_btn.setAutoDefault(False)
@@ -76,7 +78,6 @@ class FetchTab(QWidget):
         self.cancel_btn.clicked.connect(self.on_cancel)
 
     def on_run(self) -> None:
-        # ✅ Hard guard: ignore any startup-trigger noise (EXE issue)
         w = self.window()
         if not (w and w.isVisible() and QApplication.activeWindow() is w):
             return
@@ -98,7 +99,6 @@ class FetchTab(QWidget):
             QMessageBox.warning(self, "Missing input", "Please choose an output folder in Session.")
             return
 
-        # Keep worker compatibility: encode date_text
         if s.date_mode == "Single date":
             date_text = s.single_date
         elif s.date_mode == "Date range":
@@ -113,6 +113,8 @@ class FetchTab(QWidget):
             model=s.model,
             selected_pcs=list(s.selected_pcs),
             include_activemap=self.include_active.isChecked(),
+            # NOTE: we’ll wire this into the engine in the next step
+            area_id=self.area.area_id,
         )
 
         self.progress.setValue(0)

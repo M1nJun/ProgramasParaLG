@@ -6,8 +6,9 @@ from datetime import date
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
+from .area_spec import AreaSpec, AREA_B
 from .pc_registry import PcInfo
-from .remote_path_resolver import find_remote_crop_b_roots, RemoteCropBRoot
+from .remote_path_resolver import find_remote_crop_roots, RemoteCropRoot
 from .scanner import scan
 
 LogFn = Optional[Callable[[str], None]]
@@ -46,6 +47,23 @@ def _ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
+def _area_out_dir(base_out_dir: Path, area: AreaSpec) -> Path:
+    """
+    Implements your Option A:
+
+      base_out_dir\A\<class>\...
+      base_out_dir\B\<class>\...
+
+    Safety: if the user already picked a folder that ends in "\A" or "\B",
+    don't double-nest (e.g., avoid ...\A\A\...).
+    """
+    base_out_dir = base_out_dir.expanduser().resolve()
+    tail = base_out_dir.name.strip().upper()
+    if tail == area.area_id:
+        return base_out_dir
+    return base_out_dir / area.area_id
+
+
 def fetch_images_remote(
     *,
     pcs: List[PcInfo],
@@ -53,6 +71,7 @@ def fetch_images_remote(
     out_dir: Path,
     model: str,
     include_activemap: bool,
+    area: AreaSpec = AREA_B,
     log: LogFn = None,
     progress: ProgressFn = None,
     detail_progress: DetailProgressFn = None,
@@ -60,19 +79,22 @@ def fetch_images_remote(
 ) -> FetchRemoteStats:
     """
     Remote-only fetch:
-      - For each selected PC, for each day, search E/F/G for Crop_B root (rollover-safe)
-      - Scan and merge all files into out_dir/<class_name>/...
+      - For each selected PC, for each day, search E/F/G for Crop_<area> root (rollover-safe)
+      - Scan and merge all files into out_dir/<area_id>/<class_name>/...
       - Overwrite on collisions
       - Skip offline/unreachable PCs and continue
     """
-
-    out_dir = out_dir.expanduser().resolve()
+    out_dir = _area_out_dir(out_dir, area)
     _ensure_dir(out_dir)
 
-    _log(log, f"[INFO] Remote fetch PCs: {len(pcs)} | days: {len(days)} | model={model} | include_activemap={include_activemap}")
+    _log(
+        log,
+        f"[INFO] Remote fetch ({area.display_name}) PCs: {len(pcs)} | days: {len(days)} | "
+        f"model={model} | include_activemap={include_activemap}",
+    )
 
     # Pre-scan to compute total files (keeps progress bar correct)
-    scan_jobs: List[Tuple[PcInfo, date, RemoteCropBRoot, object]] = []
+    scan_jobs: List[Tuple[PcInfo, date, RemoteCropRoot, object]] = []
     total_files = 0
     missing_days = 0
     missing_pcs = 0
@@ -87,7 +109,7 @@ def fetch_images_remote(
         any_found_for_pc = False
 
         for day in days:
-            roots = find_remote_crop_b_roots(pc=pc, model=model, day=day)
+            roots = find_remote_crop_roots(pc=pc, model=model, day=day, area=area)
             if not roots:
                 continue
 
@@ -112,7 +134,11 @@ def fetch_images_remote(
 
         if not any_found_for_pc:
             missing_pcs += 1
-            _log(log, f"[WARN] [{pc.key}] No Crop_B folders found for selected day(s). (PC offline or no data)")
+            _log(
+                log,
+                f"[WARN] [{pc.key}] No {area.crop_dirname} folders found for selected day(s). "
+                f"(PC offline or no data)",
+            )
 
     if total_files == 0:
         _log(log, "[WARN] Nothing to copy (0 files).")
@@ -143,8 +169,13 @@ def fetch_images_remote(
                     _log(log, "[WARN] Cancelled during copy.")
                     _progress(progress, done, total_files)
                     return FetchRemoteStats(
-                        total_copied, total_overwritten, missing_days, missing_pcs,
-                        total_active_included, total_active_missing, per_class_copied
+                        total_copied,
+                        total_overwritten,
+                        missing_days,
+                        missing_pcs,
+                        total_active_included,
+                        total_active_missing,
+                        per_class_copied,
                     )
 
                 dst = dest_dir / src.name
@@ -163,8 +194,17 @@ def fetch_images_remote(
                 _detail(detail_progress, done, total_files, class_name, src.name)
                 _progress(progress, done, total_files)
 
-    _log(log, f"[DONE] Copied {total_copied} files (overwrote {total_overwritten}). Missing PCs: {missing_pcs}")
+    _log(
+        log,
+        f"[DONE] ({area.display_name}) Copied {total_copied} files (overwrote {total_overwritten}). "
+        f"Missing PCs: {missing_pcs}",
+    )
     return FetchRemoteStats(
-        total_copied, total_overwritten, missing_days, missing_pcs,
-        total_active_included, total_active_missing, per_class_copied
+        total_copied,
+        total_overwritten,
+        missing_days,
+        missing_pcs,
+        total_active_included,
+        total_active_missing,
+        per_class_copied,
     )

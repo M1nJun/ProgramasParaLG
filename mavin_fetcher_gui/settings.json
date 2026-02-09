@@ -1,16 +1,31 @@
 {
-  "model": "JF2",
-  "out_dir": "",
-  "csv_dir": "D:\\Files\\Data\\Result\\Day",
-  "date_mode": "Single date",
-  "single_date": "",
-  "range_start": "",
-  "range_end": "",
-  "specific_dates": [],
-  "selected_pcs": [],
-  "drives_text": "",
-  "include_activemap": false,
-  "summary_csv_paths": [],
-  "summary_top_n": 20,
-  "window_geometry_b64": "AdnQywADAAAAAALwAAAAgQAABnMAAAMpAAAC8AAAAKAAAAZzAAADKQAAAAAAAAAAB4AAAALwAAAAoAAABnMAAAMp"
+  "area_a": {
+    "model": "JF2",
+    "out_dir": "",
+    "csv_dir": "D:\\Files\\Data\\Result\\Day",
+    "date_mode": "Single date",
+    "single_date": "",
+    "range_start": "",
+    "range_end": "",
+    "specific_dates": [],
+    "selected_pcs": [],
+    "include_activemap": false,
+    "summary_csv_paths": [],
+    "summary_top_n": 20
+  },
+  "area_b": {
+    "model": "JF2",
+    "out_dir": "",
+    "csv_dir": "D:\\Files\\Data\\Result\\Day",
+    "date_mode": "Single date",
+    "single_date": "",
+    "range_start": "",
+    "range_end": "",
+    "specific_dates": [],
+    "selected_pcs": [],
+    "include_activemap": false,
+    "summary_csv_paths": [],
+    "summary_top_n": 20
+  },
+  "window_geometry_b64": "AdnQywADAAAAAAN9AAAAqgAABwAAAANSAAADfQAAAMkAAAcAAAADUgAAAAAAAAAAB4AAAAN9AAAAyQAABwAAAANS"
 }
