@@ -10,17 +10,41 @@ class ParsedImageName:
     cell_key: str            # derived from filename prefix
     region: str              # LOWER_A_L / LOWER_A_R / UPPER_A_L / UPPER_A_R (or B)
     map_type: str            # "SourceMap" or "ActiveMap"
+    polarity: str            # "ANODE" or "CATHODE"
+
+
+def _detect_map_type(lower_name: str) -> Optional[str]:
+    if "_sourcemap." in lower_name:
+        return "SourceMap"
+    if "_activemap." in lower_name:
+        return "ActiveMap"
+    return None
+
+
+def _detect_polarity(parts: list[str]) -> Optional[str]:
+    # Your guaranteed tokens:
+    #   ... _AN_ ...  -> ANODE
+    #   ... _CA_ ...  -> CATHODE
+    # Example:
+    #   b61RK02140_03-2_AN_142953_UPPER_1_A_L_..._SourceMap.jpg
+    #   b61RK02140_04-1_CA_142953_UPPER_1_A_L_..._SourceMap.jpg
+    for p in parts:
+        if p == "AN":
+            return "ANODE"
+        if p == "CA":
+            return "CATHODE"
+    return None
 
 
 def parse_image_filename(path: Path) -> Optional[ParsedImageName]:
     """
     Parse filenames like:
       c61RK02525_03-2_AN_142845_UPPER_1_A_L_..._SourceMap.jpg
-      l61SK02085_03-2_AN_083058_LOWER_2_B_R_..._ActiveMap.jpg
+      b61RK02140_04-1_CA_142953_UPPER_1_A_L_..._ActiveMap.jpg
 
     Robustness:
-      - doesn't depend on the digit (can be missing or different)
       - extracts region using anchor tokens LOWER/UPPER + optional digit + (A|B) + (L|R)
+      - polarity uses exact token AN/CA (guaranteed by your rule)
       - cell_key is everything before LOWER/UPPER token
     """
     name = path.name
@@ -28,16 +52,16 @@ def parse_image_filename(path: Path) -> Optional[ParsedImageName]:
     if not (lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png")):
         return None
 
-    map_type: Optional[str] = None
-    if "_sourcemap." in lower:
-        map_type = "SourceMap"
-    elif "_activemap." in lower:
-        map_type = "ActiveMap"
-    else:
+    map_type = _detect_map_type(lower)
+    if not map_type:
         return None
 
-    stem = path.stem  # drops extension
+    stem = path.stem
     parts = stem.split("_")
+
+    pol = _detect_polarity(parts)
+    if not pol:
+        return None
 
     # Find index of LOWER or UPPER
     idx = -1
@@ -56,14 +80,13 @@ def parse_image_filename(path: Path) -> Optional[ParsedImageName]:
     area_id: Optional[str] = None
     side: Optional[str] = None
 
-    # Expected: [A|B] then [L|R]
     if j < len(parts) and parts[j] in ("A", "B"):
         area_id = parts[j]
         if j + 1 < len(parts) and parts[j + 1] in ("L", "R"):
             side = parts[j + 1]
     else:
-        # fallback: scan a small window for (A|B) then (L|R)
-        window = parts[idx : min(len(parts), idx + 7)]
+        # fallback window scan
+        window = parts[idx: min(len(parts), idx + 7)]
         for k in range(len(window) - 1):
             if window[k] in ("A", "B") and window[k + 1] in ("L", "R"):
                 area_id = window[k]
@@ -74,9 +97,6 @@ def parse_image_filename(path: Path) -> Optional[ParsedImageName]:
         return None
 
     region = f"{parts[idx]}_{area_id}_{side}"  # LOWER_A_L, UPPER_B_R, etc.
+    cell_key = "_".join(parts[:idx]).strip() or stem
 
-    cell_key = "_".join(parts[:idx]).strip()
-    if not cell_key:
-        cell_key = stem
-
-    return ParsedImageName(cell_key=cell_key, region=region, map_type=map_type)
+    return ParsedImageName(cell_key=cell_key, region=region, map_type=map_type, polarity=pol)

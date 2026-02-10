@@ -535,6 +535,10 @@
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher\\__init__.py',
    'PYMODULE'),
+  ('mavin_fetcher.area_spec',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher\\area_spec.py',
+   'PYMODULE'),
   ('mavin_fetcher.b_area_summary',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher\\b_area_summary.py',
@@ -619,6 +623,10 @@
   ('mavin_fetcher_gui',
    'C:\\Users\\user\\Desktop\\Github '
    'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\__init__.py',
+   'PYMODULE'),
+  ('mavin_fetcher_gui.area_workspace',
+   'C:\\Users\\user\\Desktop\\Github '
+   'Repo\\ProgramasParaLG\\mavin_fetcher_gui\\area_workspace.py',
    'PYMODULE'),
   ('mavin_fetcher_gui.breakdown_table_widget',
    'C:\\Users\\user\\Desktop\\Github '

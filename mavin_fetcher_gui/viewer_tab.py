@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
@@ -22,6 +22,12 @@ from .log_widget import LogWidget
 from .session_manager import SessionManager
 from .viewer_worker import ViewerWorker, ViewerBuildConfig
 from .status_bar import StatusBarLabel
+
+
+POLARITY_ALL = "All"
+POLARITY_CATHODE = "CATHODE"
+POLARITY_ANODE = "ANODE"
+POLARITY_ORDER = [POLARITY_CATHODE, POLARITY_ANODE]
 
 
 class ViewerTab(QWidget):
@@ -57,18 +63,31 @@ class ViewerTab(QWidget):
 
         # Filters
         filt = QHBoxLayout()
+
+        self.polarity_filter = QComboBox()
+        self.polarity_filter.addItems([POLARITY_ALL, POLARITY_CATHODE, POLARITY_ANODE])
+
         self.region_filter = QComboBox()
         self.region_filter.addItems(["All", *list(self.area.regions)])
+
         self.map_filter = QComboBox()
         self.map_filter.addItems(["SourceMap", "ActiveMap"])  # default SourceMap
+
         self.search = QLineEdit()
         self.search.setPlaceholderText("Search cell contains...")
+
+        filt.addWidget(QLabel("Polarity:"))
+        filt.addWidget(self.polarity_filter)
+        filt.addSpacing(10)
+
         filt.addWidget(QLabel("Region:"))
         filt.addWidget(self.region_filter)
         filt.addSpacing(10)
+
         filt.addWidget(QLabel("Map:"))
         filt.addWidget(self.map_filter)
         filt.addSpacing(10)
+
         filt.addWidget(self.search)
         root.addLayout(filt)
 
@@ -76,7 +95,7 @@ class ViewerTab(QWidget):
         main = QHBoxLayout()
 
         self.class_list = QListWidget()
-        self.class_list.setMinimumWidth(220)
+        self.class_list.setMinimumWidth(260)
         main.addWidget(self.class_list)
 
         self.occ_list = QListWidget()
@@ -96,14 +115,16 @@ class ViewerTab(QWidget):
         # wiring
         self.refresh_btn.clicked.connect(self.rebuild_index)
 
+        self.session.changed.connect(lambda *_: self._sync_paths())
+
+        self.polarity_filter.currentIndexChanged.connect(lambda *_: self._rebuild_class_list())
         self.class_list.currentItemChanged.connect(lambda *_: self._rebuild_occ_list())
+
         self.region_filter.currentIndexChanged.connect(lambda *_: self._rebuild_occ_list())
         self.search.textChanged.connect(lambda *_: self._rebuild_occ_list())
         self.map_filter.currentIndexChanged.connect(lambda *_: self._update_preview_for_selected())
 
         self.occ_list.currentItemChanged.connect(lambda *_: self._update_preview_for_selected())
-
-        self.session.changed.connect(lambda *_: self._sync_paths())
 
         # hotkeys
         self._install_hotkeys()
@@ -139,20 +160,48 @@ class ViewerTab(QWidget):
 
     # ---- External hook (from Summary click) ----
     def show_class_key(self, class_key: str) -> None:
+        """
+        Summary currently passes only class_key. With polarity split, we resolve:
+        - If polarity filter is CATHODE or ANODE: resolve within that polarity.
+        - If polarity is All: try CATHODE then ANODE (first match wins).
+        """
         if not self._index:
             QMessageBox.information(self, "Viewer", "Index not ready yet. Click Refresh Index.")
             return
-        folder = resolve_folder_for_class_key(self._index, class_key)
-        if not folder:
-            QMessageBox.information(
-                self, "Viewer",
-                f"Class folder not found for '{class_key}'.\nFetch images first (or Refresh Index)."
-            )
-            return
-        for i in range(self.class_list.count()):
-            if self.class_list.item(i).text() == folder:
-                self.class_list.setCurrentRow(i)
+
+        desired_pol = self.polarity_filter.currentText().strip().upper()
+
+        def try_select(pol: str) -> bool:
+            folder = resolve_folder_for_class_key(self._index, pol, class_key)
+            if not folder:
+                return False
+
+            # ensure polarity filter matches (so class list is built correctly)
+            self._set_polarity_filter(pol)
+
+            # select the class list item
+            for i in range(self.class_list.count()):
+                item = self.class_list.item(i)
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if isinstance(data, tuple) and len(data) == 2:
+                    p, f = data
+                    if p == pol and f == folder:
+                        self.class_list.setCurrentRow(i)
+                        return True
+            return False
+
+        if desired_pol in (POLARITY_CATHODE, POLARITY_ANODE):
+            if try_select(desired_pol):
                 return
+        else:
+            for pol in POLARITY_ORDER:
+                if try_select(pol):
+                    return
+
+        QMessageBox.information(
+            self, "Viewer",
+            f"Class folder not found for '{class_key}'.\nFetch images first (or Refresh Index)."
+        )
 
     # ---- Index building ----
     def rebuild_index(self) -> None:
@@ -188,15 +237,66 @@ class ViewerTab(QWidget):
             return
 
         self._index = idx_obj
-        self.class_list.clear()
+        self._rebuild_class_list()
+        self.status.set_success("Index ready.")
 
-        for folder_name in sorted(self._index.classes.keys()):
-            self.class_list.addItem(QListWidgetItem(folder_name))
+    # ---- Class list ----
+    def _set_polarity_filter(self, pol: str) -> None:
+        pol = (pol or "").strip().upper()
+        target = POLARITY_ALL
+        if pol == POLARITY_CATHODE:
+            target = POLARITY_CATHODE
+        elif pol == POLARITY_ANODE:
+            target = POLARITY_ANODE
+
+        if self.polarity_filter.currentText() != target:
+            self.polarity_filter.setCurrentText(target)
+
+    def _selected_class_ref(self) -> Optional[Tuple[str, str]]:
+        """
+        Returns (polarity, class_folder) for current class selection.
+        """
+        item = self.class_list.currentItem()
+        if not item:
+            return None
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(data, tuple) and len(data) == 2:
+            pol, folder = data
+            return str(pol), str(folder)
+        return None
+
+    def _rebuild_class_list(self) -> None:
+        self.class_list.clear()
+        self.occ_list.clear()
+        self.preview.set_image(None)
+
+        if not self._index:
+            return
+
+        pol_choice = self.polarity_filter.currentText().strip().upper()
+        classes_by_pol = self._index.classes or {}
+
+        def add_item(pol: str, folder: str) -> None:
+            # Show polarity prefix only in "All" mode to avoid confusion
+            if pol_choice == POLARITY_ALL:
+                label = f"{pol} | {folder}"
+            else:
+                label = folder
+            li = QListWidgetItem(label)
+            li.setData(Qt.ItemDataRole.UserRole, (pol, folder))
+            self.class_list.addItem(li)
+
+        if pol_choice in (POLARITY_CATHODE, POLARITY_ANODE):
+            for folder in sorted((classes_by_pol.get(pol_choice, {}) or {}).keys()):
+                add_item(pol_choice, folder)
+        else:
+            # All: add both polarities (keep stable order)
+            for pol in POLARITY_ORDER:
+                for folder in sorted((classes_by_pol.get(pol, {}) or {}).keys()):
+                    add_item(pol, folder)
 
         if self.class_list.count() > 0:
             self.class_list.setCurrentRow(0)
-
-        self.status.set_success("Index ready.")
 
     # ---- Occurrences + preview ----
     def _rebuild_occ_list(self) -> None:
@@ -205,12 +305,13 @@ class ViewerTab(QWidget):
 
         if not self._index:
             return
-        cur = self.class_list.currentItem()
-        if not cur:
-            return
 
-        folder = cur.text()
-        items = self._index.classes.get(folder, [])
+        sel = self._selected_class_ref()
+        if not sel:
+            return
+        pol, folder = sel
+
+        items = (self._index.classes.get(pol, {}) or {}).get(folder, [])
 
         region_choice = self.region_filter.currentText()
         q = (self.search.text() or "").strip().lower()
@@ -274,7 +375,7 @@ class ViewerTab(QWidget):
             self._undo_stack.append(action)
 
             self.log.append_line(
-                f"[LABEL-MOVE] {label} | {it.class_folder} | {it.cell_key} | {it.region} -> {action.dst_path}"
+                f"[LABEL-MOVE] {label} | {it.polarity} | {it.class_folder} | {it.cell_key} | {it.region} -> {action.dst_path}"
             )
             self.status.set_success(f"Moved to {label}: {it.class_folder}")
 
@@ -307,11 +408,15 @@ class ViewerTab(QWidget):
                 return True
         return False
 
-    def _select_class_folder(self, folder_name: str) -> None:
+    def _select_class_folder(self, pol: str, folder_name: str) -> None:
         for i in range(self.class_list.count()):
-            if self.class_list.item(i).text() == folder_name:
-                self.class_list.setCurrentRow(i)
-                return
+            item = self.class_list.item(i)
+            data = item.data(Qt.ItemDataRole.UserRole)
+            if isinstance(data, tuple) and len(data) == 2:
+                p, f = data
+                if p == pol and f == folder_name:
+                    self.class_list.setCurrentRow(i)
+                    return
 
     def _hotkey_undo(self) -> None:
         if not self._undo_stack:
@@ -323,7 +428,9 @@ class ViewerTab(QWidget):
             self.log.append_line(f"[UNDO] Moved back: {action.src_path}")
 
             # update UI list to bring it back
-            self._select_class_folder(action.class_folder)
+            self._set_polarity_filter(action.polarity)
+            self._rebuild_class_list()
+            self._select_class_folder(action.polarity, action.class_folder)
             self._rebuild_occ_list()
 
             ok = self._select_occurrence_if_visible(cell_key=action.cell_key, region=action.region)

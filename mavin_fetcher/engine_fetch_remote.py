@@ -4,17 +4,19 @@ import shutil
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .area_spec import AreaSpec, AREA_B
+from .config import excluded_class_folders_for_area
+from .filename_parser import parse_image_filename
 from .pc_registry import PcInfo
 from .remote_path_resolver import find_remote_crop_roots, RemoteCropRoot
 from .scanner import scan
 
 LogFn = Optional[Callable[[str], None]]
-ProgressFn = Optional[Callable[[int, int], None]]  # done,total
+ProgressFn = Optional[Callable[[int, int], None]]
 CancelFn = Optional[Callable[[], bool]]
-DetailProgressFn = Optional[Callable[[int, int, str, str], None]]  # done,total,class,file
+DetailProgressFn = Optional[Callable[[int, int, str, str], None]]
 
 
 @dataclass
@@ -47,21 +49,11 @@ def _ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
-def _area_out_dir(base_out_dir: Path, area: AreaSpec) -> Path:
-    """
-    Implements your Option A:
-
-      base_out_dir\A\<class>\...
-      base_out_dir\B\<class>\...
-
-    Safety: if the user already picked a folder that ends in "\A" or "\B",
-    don't double-nest (e.g., avoid ...\A\A\...).
-    """
-    base_out_dir = base_out_dir.expanduser().resolve()
-    tail = base_out_dir.name.strip().upper()
-    if tail == area.area_id:
-        return base_out_dir
-    return base_out_dir / area.area_id
+def _polarity_from_filename(path: Path) -> Optional[str]:
+    parsed = parse_image_filename(path)
+    if not parsed:
+        return None
+    return parsed.polarity  # "ANODE" or "CATHODE"
 
 
 def fetch_images_remote(
@@ -78,22 +70,27 @@ def fetch_images_remote(
     is_cancelled: CancelFn = None,
 ) -> FetchRemoteStats:
     """
-    Remote-only fetch:
-      - For each selected PC, for each day, search E/F/G for Crop_<area> root (rollover-safe)
-      - Scan and merge all files into out_dir/<area_id>/<class_name>/...
-      - Overwrite on collisions
-      - Skip offline/unreachable PCs and continue
+    Output structure (NEW):
+      out_dir\\ANODE\\<class>\\...
+      out_dir\\CATHODE\\<class>\\...
+
+    NOTE:
+      out_dir is already area-separated by GUI defaults:
+        A: D:\\A_AREA_DL_REVIEW\\YYYYMMDD
+        B: D:\\B_AREA_DL_REVIEW\\YYYYMMDD
+      so we do NOT create extra \\A or \\B under out_dir.
     """
-    out_dir = _area_out_dir(out_dir, area)
+    out_dir = out_dir.expanduser().resolve()
     _ensure_dir(out_dir)
 
+    excluded = excluded_class_folders_for_area(area.area_id)
+    _log(log, f"[INFO] Excluding class folders for {area.area_id}: {sorted(excluded)}")
     _log(
         log,
         f"[INFO] Remote fetch ({area.display_name}) PCs: {len(pcs)} | days: {len(days)} | "
         f"model={model} | include_activemap={include_activemap}",
     )
 
-    # Pre-scan to compute total files (keeps progress bar correct)
     scan_jobs: List[Tuple[PcInfo, date, RemoteCropRoot, object]] = []
     total_files = 0
     missing_days = 0
@@ -121,7 +118,7 @@ def fetch_images_remote(
 
                 _log(log, f"[OK] [{pc.key}] {day} -> {r.drive}: {r.path}")
                 try:
-                    sr = scan(r.path, include_activemap=include_activemap)
+                    sr = scan(r.path, include_activemap=include_activemap, excluded_class_folders=excluded)
                 except Exception as e:
                     _log(log, f"[WARN] [{pc.key}] scan failed: {r.path} ({e})")
                     continue
@@ -134,11 +131,7 @@ def fetch_images_remote(
 
         if not any_found_for_pc:
             missing_pcs += 1
-            _log(
-                log,
-                f"[WARN] [{pc.key}] No {area.crop_dirname} folders found for selected day(s). "
-                f"(PC offline or no data)",
-            )
+            _log(log, f"[WARN] [{pc.key}] No {area.crop_dirname} folders found for selected day(s).")
 
     if total_files == 0:
         _log(log, "[WARN] Nothing to copy (0 files).")
@@ -161,9 +154,6 @@ def fetch_images_remote(
             if not files:
                 continue
 
-            dest_dir = out_dir / class_name
-            _ensure_dir(dest_dir)
-
             for src in files:
                 if is_cancelled and is_cancelled():
                     _log(log, "[WARN] Cancelled during copy.")
@@ -178,6 +168,17 @@ def fetch_images_remote(
                         per_class_copied,
                     )
 
+                polarity = _polarity_from_filename(src)
+                if polarity not in ("ANODE", "CATHODE"):
+                    _log(log, f"[WARN] Cannot detect polarity from filename, skipping: {src.name}")
+                    done += 1
+                    _detail(detail_progress, done, total_files, class_name, src.name)
+                    _progress(progress, done, total_files)
+                    continue
+
+                dest_dir = out_dir / polarity / class_name
+                _ensure_dir(dest_dir)
+
                 dst = dest_dir / src.name
                 try:
                     if dst.exists():
@@ -185,10 +186,11 @@ def fetch_images_remote(
                     shutil.copy2(src, dst)
                 except Exception as e:
                     _log(log, f"[WARN] copy failed: {src} -> {dst} ({e})")
-                    # still advance progress to avoid stalling
                 else:
                     total_copied += 1
-                    per_class_copied[class_name] = per_class_copied.get(class_name, 0) + 1
+                    # keep per-class stats separate by polarity to avoid confusion
+                    key = f"{polarity}/{class_name}"
+                    per_class_copied[key] = per_class_copied.get(key, 0) + 1
 
                 done += 1
                 _detail(detail_progress, done, total_files, class_name, src.name)

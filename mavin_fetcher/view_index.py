@@ -7,16 +7,10 @@ from typing import Dict, List, Optional, Tuple
 from .filename_parser import parse_image_filename
 
 
-REGIONS = ["LOWER_B_L", "LOWER_B_R", "UPPER_B_L", "UPPER_B_R"]
+POLARITIES = ["CATHODE", "ANODE"]
 
 
 def normalize_class_folder(folder_name: str) -> str:
-    """
-    Convert:
-      05_NG_CRITICAL -> NG_CRITICAL
-      06_OK_ROI      -> OK_ROI
-      NG_FOLDED      -> NG_FOLDED
-    """
     s = folder_name.strip()
     if "_" in s:
         head, tail = s.split("_", 1)
@@ -27,82 +21,96 @@ def normalize_class_folder(folder_name: str) -> str:
 
 @dataclass
 class OccurrenceItem:
-    """
-    One occurrence = one cell in one region (with optional source/active files).
-    """
-    class_folder: str      # actual folder name e.g. 05_NG_CRITICAL
-    class_key: str         # normalized e.g. NG_CRITICAL
+    class_folder: str
+    class_key: str
     cell_key: str
-    region: str            # LOWER_B_L etc
+    region: str
+    polarity: str  # "ANODE" or "CATHODE"
     source_path: Optional[Path] = None
     active_path: Optional[Path] = None
 
 
 @dataclass
 class ViewIndex:
-    """
-    Index built from fetch output folder.
-    classes maps folder-name -> list[OccurrenceItem]
-    class_key_to_folder helps map NG_CRITICAL -> 05_NG_CRITICAL
-    """
     out_dir: Path
-    classes: Dict[str, List[OccurrenceItem]]
-    class_key_to_folder: Dict[str, str]
+    # polarity -> class_folder -> list[OccurrenceItem]
+    classes: Dict[str, Dict[str, List[OccurrenceItem]]]
+    # polarity -> class_key -> class_folder
+    class_key_to_folder: Dict[str, Dict[str, str]]
+
+
+def _iter_class_dirs_under(root: Path) -> List[Path]:
+    return sorted([p for p in root.iterdir() if p.is_dir()], key=lambda p: p.name.lower())
 
 
 def build_view_index(out_dir: Path) -> ViewIndex:
     out_dir = out_dir.expanduser().resolve()
-    classes: Dict[str, List[OccurrenceItem]] = {}
-    class_key_to_folder: Dict[str, str] = {}
+
+    classes: Dict[str, Dict[str, List[OccurrenceItem]]] = {}
+    class_key_to_folder: Dict[str, Dict[str, str]] = {}
 
     if not out_dir.exists() or not out_dir.is_dir():
         return ViewIndex(out_dir=out_dir, classes={}, class_key_to_folder={})
 
-    # temp map: (folder, cell_key, region) -> OccurrenceItem
-    bucket: Dict[Tuple[str, str, str], OccurrenceItem] = {}
+    # Detect new polarity layout
+    polarity_roots: List[Tuple[str, Path]] = []
+    for pol in POLARITIES:
+        p = out_dir / pol
+        if p.exists() and p.is_dir():
+            polarity_roots.append((pol, p))
 
-    for class_dir in sorted([p for p in out_dir.iterdir() if p.is_dir()]):
-        folder_name = class_dir.name
-        class_key = normalize_class_folder(folder_name)
-        class_key_to_folder[class_key] = folder_name
+    # Backward compatible: no polarity folders -> treat everything as "CATHODE" bucket (or "ALL")
+    if not polarity_roots:
+        polarity_roots = [("CATHODE", out_dir)]
 
-        for f in class_dir.glob("*.jpg"):
-            parsed = parse_image_filename(f)
-            if not parsed:
-                continue
+    # temp: (polarity, folder, cell, region) -> OccurrenceItem
+    bucket: Dict[Tuple[str, str, str, str], OccurrenceItem] = {}
 
-            key = (folder_name, parsed.cell_key, parsed.region)
-            item = bucket.get(key)
-            if not item:
-                item = OccurrenceItem(
-                    class_folder=folder_name,
-                    class_key=class_key,
-                    cell_key=parsed.cell_key,
-                    region=parsed.region,
-                )
-                bucket[key] = item
+    for polarity, root in polarity_roots:
+        classes.setdefault(polarity, {})
+        class_key_to_folder.setdefault(polarity, {})
 
-            if parsed.map_type == "SourceMap":
-                item.source_path = f
-            elif parsed.map_type == "ActiveMap":
-                item.active_path = f
+        for class_dir in _iter_class_dirs_under(root):
+            folder_name = class_dir.name
+            class_key = normalize_class_folder(folder_name)
+            class_key_to_folder[polarity][class_key] = folder_name
+
+            for f in class_dir.glob("*.jpg"):
+                parsed = parse_image_filename(f)
+                if not parsed:
+                    continue
+
+                key = (polarity, folder_name, parsed.cell_key, parsed.region)
+                item = bucket.get(key)
+                if not item:
+                    item = OccurrenceItem(
+                        class_folder=folder_name,
+                        class_key=class_key,
+                        cell_key=parsed.cell_key,
+                        region=parsed.region,
+                        polarity=polarity,
+                    )
+                    bucket[key] = item
+
+                if parsed.map_type == "SourceMap":
+                    item.source_path = f
+                elif parsed.map_type == "ActiveMap":
+                    item.active_path = f
 
     # finalize classes dict
-    for (folder_name, _, _), item in bucket.items():
-        classes.setdefault(folder_name, []).append(item)
+    for (polarity, folder_name, _, _), item in bucket.items():
+        classes.setdefault(polarity, {}).setdefault(folder_name, []).append(item)
 
-    # sort each class list by cell_key then region
-    for folder_name in classes:
-        classes[folder_name].sort(key=lambda x: (x.cell_key, x.region))
+    for polarity in classes:
+        for folder_name in classes[polarity]:
+            classes[polarity][folder_name].sort(key=lambda x: (x.cell_key, x.region))
 
     return ViewIndex(out_dir=out_dir, classes=classes, class_key_to_folder=class_key_to_folder)
 
 
-def resolve_folder_for_class_key(index: ViewIndex, class_key: str) -> Optional[str]:
-    """
-    Map NG_CRITICAL -> 05_NG_CRITICAL if found.
-    """
+def resolve_folder_for_class_key(index: ViewIndex, polarity: str, class_key: str) -> Optional[str]:
     if not class_key:
         return None
+    pol = (polarity or "").strip().upper()
     key = class_key.strip().upper()
-    return index.class_key_to_folder.get(key)
+    return (index.class_key_to_folder.get(pol, {}) or {}).get(key)

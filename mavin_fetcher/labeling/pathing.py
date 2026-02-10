@@ -9,11 +9,12 @@ def human_root_from_output(output_dir: Path) -> Path:
     return output_dir.expanduser().resolve() / "HumanReview"
 
 
-def dest_dir_for(human_root: Path, class_folder: str, label: Label) -> Path:
+def dest_dir_for(human_root: Path, polarity: str, class_folder: str, label: Label) -> Path:
     """
-    <HumanRoot>\<ClassFolder>\<Label>\
+    <HumanRoot>\\<POLARITY>\\<ClassFolder>\\<Label>\
     """
-    return human_root / class_folder / label
+    pol = (polarity or "").strip().upper() or "CATHODE"
+    return human_root / pol / class_folder / label
 
 
 def ensure_dir(p: Path) -> None:

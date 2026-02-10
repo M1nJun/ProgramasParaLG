@@ -16,9 +16,10 @@ def apply_label(
 ) -> LabelAction:
     """
     MOVE SourceMap only to HumanReview mirror folders.
-    Overwrite if exists (per your rule).
+    Overwrite if exists.
 
-    Returns LabelAction that can be undone (move back).
+    Destination includes polarity:
+      HumanReview\\<POLARITY>\\<ClassFolder>\\<Label>\\
     """
     if not occurrence.source_path:
         raise ValueError("Selected occurrence has no SourceMap file.")
@@ -27,41 +28,34 @@ def apply_label(
     if not src.exists():
         raise FileNotFoundError(f"SourceMap file not found: {src}")
 
-    dest_dir = dest_dir_for(Path(human_root), occurrence.class_folder, label)
+    dest_dir = dest_dir_for(Path(human_root), occurrence.polarity, occurrence.class_folder, label)
     ensure_dir(dest_dir)
 
     dst = dest_dir / src.name
 
-    # Overwrite allowed
     if dst.exists():
         dst.unlink()
 
-    # MOVE
     shutil.move(str(src), str(dst))
 
     return LabelAction(
         label=label,
+        polarity=occurrence.polarity,
         class_folder=occurrence.class_folder,
         cell_key=occurrence.cell_key,
         region=occurrence.region,
-        src_path=src,     # original location
-        dst_path=dst,     # moved-to location
+        src_path=src,
+        dst_path=dst,
     )
 
 
 def undo(action: LabelAction) -> None:
-    """
-    Undo for move-mode: move file back from HumanReview to original src_path.
-    Overwrite original if exists.
-    """
     src_back = Path(action.src_path)
     moved = Path(action.dst_path)
 
     if not moved.exists():
-        # nothing to undo
         return
 
-    # Ensure original directory exists
     src_back.parent.mkdir(parents=True, exist_ok=True)
 
     if src_back.exists():
