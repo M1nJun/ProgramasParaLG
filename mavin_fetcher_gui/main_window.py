@@ -6,10 +6,10 @@ from PyQt6.QtWidgets import QMainWindow, QTabWidget
 from mavin_fetcher.area_spec import AREA_A, AREA_B
 
 from .area_workspace import AreaWorkspace
+from .horn_lead_workspace import HornLeadWorkspace
 from .session_manager import SessionManager
 from .session_state import SessionState
 from .settings_store import load_settings, save_settings, Settings
-
 
 def _session_state_from_area_settings(a) -> SessionState:
     return SessionState(
@@ -24,7 +24,6 @@ def _session_state_from_area_settings(a) -> SessionState:
         specific_dates=a.specific_dates or [],
     )
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -32,18 +31,20 @@ class MainWindow(QMainWindow):
 
         self._settings = load_settings()
 
-        # Two independent sessions (A and B)
+        # Sessions
         self.session_a = SessionManager(_session_state_from_area_settings(self._settings.area_a))
         self.session_b = SessionManager(_session_state_from_area_settings(self._settings.area_b))
+        self.session_hl = SessionManager(_session_state_from_area_settings(self._settings.horn_lead))
 
-        # Area workspaces
+        # Workspaces
         self.area_a_ws = AreaWorkspace(area=AREA_A, session=self.session_a)
         self.area_b_ws = AreaWorkspace(area=AREA_B, session=self.session_b)
+        self.horn_lead_ws = HornLeadWorkspace(session=self.session_hl)
 
-        # Top-level tabs: A Area / B Area
         tabs = QTabWidget()
         tabs.addTab(self.area_a_ws, "A Area")
         tabs.addTab(self.area_b_ws, "B Area")
+        tabs.addTab(self.horn_lead_ws, "HORN LEAD")
         self.setCentralWidget(tabs)
         self._tabs = tabs
 
@@ -57,22 +58,18 @@ class MainWindow(QMainWindow):
         else:
             self.resize(900, 650)
 
-        # Apply per-area settings to the workspace tabs (fetch/summary internal controls)
+        # Apply settings
         self.area_a_ws.apply_settings(self._settings.area_a)
         self.area_b_ws.apply_settings(self._settings.area_b)
+        self.horn_lead_ws.apply_settings(self._settings.horn_lead)
 
     def closeEvent(self, event) -> None:
         merged = Settings.from_dict(self._settings.to_dict())
 
-        # Pull settings from A workspace
-        a_settings = self.area_a_ws.collect_settings()
-        merged.area_a = a_settings
+        merged.area_a = self.area_a_ws.collect_settings()
+        merged.area_b = self.area_b_ws.collect_settings()
+        merged.horn_lead = self.horn_lead_ws.collect_settings()
 
-        # Pull settings from B workspace
-        b_settings = self.area_b_ws.collect_settings()
-        merged.area_b = b_settings
-
-        # window geometry
         try:
             merged.window_geometry_b64 = bytes(self.saveGeometry().toBase64()).decode("ascii")
         except Exception:

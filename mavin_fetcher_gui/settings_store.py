@@ -5,9 +5,7 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any, Dict, List
 
-
 SETTINGS_FILE = Path(__file__).resolve().parent / "settings.json"
-
 
 @dataclass
 class AreaSettings:
@@ -24,10 +22,10 @@ class AreaSettings:
 
     selected_pcs: List[str] = field(default_factory=list)
 
-    # Fetch
+    # Fetch (A/B only, harmless for HORN LEAD)
     include_activemap: bool = False
 
-    # Summary
+    # Summary (A/B only, harmless for HORN LEAD)
     summary_csv_paths: List[str] = field(default_factory=list)
     summary_top_n: int = 20
 
@@ -55,12 +53,12 @@ class AreaSettings:
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
-
 @dataclass
 class Settings:
-    # Per-area settings (new)
+    # Per-area settings
     area_a: AreaSettings = field(default_factory=AreaSettings)
     area_b: AreaSettings = field(default_factory=AreaSettings)
+    horn_lead: AreaSettings = field(default_factory=AreaSettings)
 
     # Window
     window_geometry_b64: str = ""
@@ -69,18 +67,19 @@ class Settings:
     def from_dict(d: Dict[str, Any]) -> "Settings":
         s = Settings()
 
-        # New format
         if isinstance(d.get("area_a"), dict):
             s.area_a = AreaSettings.from_dict(d["area_a"])
         if isinstance(d.get("area_b"), dict):
             s.area_b = AreaSettings.from_dict(d["area_b"])
+        if isinstance(d.get("horn_lead"), dict):
+            s.horn_lead = AreaSettings.from_dict(d["horn_lead"])
 
-        # Backward compat (old single-session format):
-        # if area_a/area_b were not present, hydrate both from top-level keys
-        if "area_a" not in d and "area_b" not in d:
+        # Backward compat: old single-session format (no area_a/area_b keys)
+        if "area_a" not in d and "area_b" not in d and "horn_lead" not in d:
             legacy = AreaSettings.from_dict(d)
             s.area_a = AreaSettings.from_dict(legacy.to_dict())
             s.area_b = AreaSettings.from_dict(legacy.to_dict())
+            s.horn_lead = AreaSettings.from_dict(legacy.to_dict())
 
         s.window_geometry_b64 = str(d.get("window_geometry_b64", s.window_geometry_b64))
         return s
@@ -89,9 +88,9 @@ class Settings:
         return {
             "area_a": self.area_a.to_dict(),
             "area_b": self.area_b.to_dict(),
+            "horn_lead": self.horn_lead.to_dict(),
             "window_geometry_b64": self.window_geometry_b64,
         }
-
 
 def load_settings() -> Settings:
     try:
@@ -102,7 +101,6 @@ def load_settings() -> Settings:
     except Exception:
         pass
     return Settings()
-
 
 def save_settings(s: Settings) -> None:
     SETTINGS_FILE.write_text(json.dumps(s.to_dict(), indent=2), encoding="utf-8")
