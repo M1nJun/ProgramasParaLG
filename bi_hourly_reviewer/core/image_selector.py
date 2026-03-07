@@ -2,8 +2,10 @@
 Image file selection.
 
 Responsibilities:
-    - Given a cell image folder and a defect side, select the correct
-      image files by matching ending patterns.
+    - Given a cell image folder, defect side, and defect type, select
+      the correct image files by matching ending patterns.
+    - Use default (2-image) patterns for most defects.
+    - Use extended (4-image) patterns for specific defect types.
 
 Does NOT locate folders (image_locator) or copy files (image_fetcher).
 """
@@ -11,40 +13,60 @@ Does NOT locate folders (image_locator) or copy files (image_fetcher).
 import os
 from typing import List
 
-from config import UPPER_IMAGE_PATTERNS, LOWER_IMAGE_PATTERNS
+from config import (
+    UPPER_IMAGE_PATTERNS_DEFAULT,
+    LOWER_IMAGE_PATTERNS_DEFAULT,
+    UPPER_IMAGE_PATTERNS_EXTENDED,
+    LOWER_IMAGE_PATTERNS_EXTENDED,
+    EXTENDED_IMAGE_DEFECTS,
+)
 from core.defect_analyzer import SIDE_UPPER, SIDE_LOWER, SIDE_BOTH
 
 
-def get_patterns_for_side(side: str) -> List[str]:
+def get_patterns_for_side(side: str, judge_defect: str = "") -> List[str]:
     """
-    Return the file ending patterns to match for a given defect side.
+    Return the file ending patterns to match for a given defect side and type.
+
+    Uses extended patterns (4 images) for defects in EXTENDED_IMAGE_DEFECTS,
+    default patterns (2 images) for everything else.
 
     Args:
         side: "UPPER", "LOWER", or "BOTH".
+        judge_defect: The JUDGE-DEFECT value (e.g. "B_R", "LONG_TAPE_L").
 
     Returns:
         List of filename ending patterns.
     """
+    use_extended = judge_defect in EXTENDED_IMAGE_DEFECTS
+
+    upper = list(UPPER_IMAGE_PATTERNS_EXTENDED if use_extended else UPPER_IMAGE_PATTERNS_DEFAULT)
+    lower = list(LOWER_IMAGE_PATTERNS_EXTENDED if use_extended else LOWER_IMAGE_PATTERNS_DEFAULT)
+
     if side == SIDE_UPPER:
-        return list(UPPER_IMAGE_PATTERNS)
+        return upper
     elif side == SIDE_LOWER:
-        return list(LOWER_IMAGE_PATTERNS)
+        return lower
     elif side == SIDE_BOTH:
-        return list(UPPER_IMAGE_PATTERNS) + list(LOWER_IMAGE_PATTERNS)
+        return upper + lower
     else:
         # UNKNOWN side — return all patterns as fallback
-        return list(UPPER_IMAGE_PATTERNS) + list(LOWER_IMAGE_PATTERNS)
+        return upper + lower
 
 
-def select_images_from_folder(folder_path: str, side: str) -> List[str]:
+def select_images_from_folder(
+    folder_path: str,
+    side: str,
+    judge_defect: str = "",
+) -> List[str]:
     """
-    Select image files from a cell folder based on the defect side.
+    Select image files from a cell folder based on defect side and type.
 
-    Matches files by their ending pattern (e.g. files ending in "_0_0.jpg").
+    Matches files by their ending pattern (e.g. files ending in "_0_2.jpg").
 
     Args:
         folder_path: Full path to the cell's image folder.
         side: "UPPER", "LOWER", or "BOTH".
+        judge_defect: The JUDGE-DEFECT value for pattern selection.
 
     Returns:
         List of full file paths to the selected images, sorted.
@@ -52,7 +74,7 @@ def select_images_from_folder(folder_path: str, side: str) -> List[str]:
     if not os.path.isdir(folder_path):
         return []
 
-    patterns = get_patterns_for_side(side)
+    patterns = get_patterns_for_side(side, judge_defect)
     all_files = os.listdir(folder_path)
     selected = []
 

@@ -253,13 +253,15 @@ class FetchTab(QWidget):
             f"  border-top: 5px solid {COLORS['text_secondary']};"
             f"}}"
         )
-        start_row.addWidget(self.date_edit, 1)
+        self.date_edit.setFixedWidth(160)
+        start_row.addWidget(self.date_edit)
 
         self.start_hour_input = StepInput(
             value=0, minimum=0, maximum=23,
             suffix=":00", wrap=True,
         )
         start_row.addWidget(self.start_hour_input)
+        start_row.addStretch()
 
         config_inner.addLayout(start_row)
 
@@ -308,11 +310,6 @@ class FetchTab(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(SPACING_MD)
 
-        self.now_btn = QPushButton("Set to Now")
-        self.now_btn.setObjectName("secondary")
-        self.now_btn.setFixedWidth(120)
-        btn_layout.addWidget(self.now_btn)
-
         btn_layout.addStretch()
 
         self.fetch_btn = QPushButton("Fetch Images")
@@ -343,7 +340,6 @@ class FetchTab(QWidget):
     def _connect_signals(self):
         """Connect UI signals to handlers."""
         self.fetch_btn.clicked.connect(self._on_fetch_clicked)
-        self.now_btn.clicked.connect(self._set_to_now)
         self.date_edit.dateChanged.connect(self._update_end_time)
         self.start_hour_input.valueChanged.connect(self._update_end_time)
         self.hours_input.valueChanged.connect(self._update_end_time)

@@ -26,6 +26,10 @@ imports:
  &#8226;   <a href="#config">config</a>
  &#8226;   <a href="#copyreg">copyreg</a>
  &#8226;   <a href="#core">core</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#core.crop_selector">core.crop_selector</a>
  &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.defect_analyzer">core.defect_analyzer</a>
  &#8226;   <a href="#core.defect_filter">core.defect_filter</a>
@@ -1832,6 +1836,7 @@ imported by:
     <a href="#_pydecimal">_pydecimal</a>
  &#8226;   <a href="#ast">ast</a>
  &#8226;   <a href="#contextlib">contextlib</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
  &#8226;   <a href="#difflib">difflib</a>
  &#8226;   <a href="#dis">dis</a>
  &#8226;   <a href="#email.feedparser">email.feedparser</a>
@@ -1975,7 +1980,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#core.csv_parser">core.csv_parser</a>
+    <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.defect_analyzer">core.defect_analyzer</a>
  &#8226;   <a href="#core.defect_filter">core.defect_filter</a>
  &#8226;   <a href="#core.image_fetcher">core.image_fetcher</a>
@@ -2091,7 +2099,11 @@ imported by:
   <a target="code" href="///C:/Users/leemi/Desktop/Github%20Repositories/ProgramasParaLG/bi_hourly_reviewer/core/__init__.py" type="text/plain"><tt>core</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
 imported by:
-    <a href="#core.csv_parser">core.csv_parser</a>
+    <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#core.crop_selector">core.crop_selector</a>
+ &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.defect_analyzer">core.defect_analyzer</a>
  &#8226;   <a href="#core.defect_filter">core.defect_filter</a>
  &#8226;   <a href="#core.fetch_pipeline">core.fetch_pipeline</a>
@@ -2099,6 +2111,89 @@ imported by:
  &#8226;   <a href="#core.image_locator">core.image_locator</a>
  &#8226;   <a href="#core.image_selector">core.image_selector</a>
  &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="core.crop_cache"></a>
+  <a target="code" href="///C:/Users/leemi/Desktop/Github%20Repositories/ProgramasParaLG/bi_hourly_reviewer/core/crop_cache.py" type="text/plain"><tt>core.crop_cache</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#collections">collections</a>
+ &#8226;   <a href="#config">config</a>
+ &#8226;   <a href="#core">core</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.fetch_pipeline">core.fetch_pipeline</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="core.crop_fetcher"></a>
+  <a target="code" href="///C:/Users/leemi/Desktop/Github%20Repositories/ProgramasParaLG/bi_hourly_reviewer/core/crop_fetcher.py" type="text/plain"><tt>core.crop_fetcher</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#config">config</a>
+ &#8226;   <a href="#core">core</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#core.fetch_pipeline">core.fetch_pipeline</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="core.crop_locator"></a>
+  <a target="code" href="///C:/Users/leemi/Desktop/Github%20Repositories/ProgramasParaLG/bi_hourly_reviewer/core/crop_locator.py" type="text/plain"><tt>core.crop_locator</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#config">config</a>
+ &#8226;   <a href="#core">core</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="core.crop_selector"></a>
+  <a target="code" href="///C:/Users/leemi/Desktop/Github%20Repositories/ProgramasParaLG/bi_hourly_reviewer/core/crop_selector.py" type="text/plain"><tt>core.crop_selector</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core">core</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -2174,6 +2269,8 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#core">core</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
  &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.defect_analyzer">core.defect_analyzer</a>
  &#8226;   <a href="#core.defect_filter">core.defect_filter</a>
@@ -6916,6 +7013,10 @@ imported by:
  &#8226;   <a href="#compression.zstd._zstdfile">compression.zstd._zstdfile</a>
  &#8226;   <a href="#config">config</a>
  &#8226;   <a href="#contextlib">contextlib</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#core.crop_selector">core.crop_selector</a>
  &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.image_fetcher">core.image_fetcher</a>
  &#8226;   <a href="#core.image_locator">core.image_locator</a>
@@ -7541,6 +7642,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#argparse">argparse</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
  &#8226;   <a href="#core.image_fetcher">core.image_fetcher</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#tarfile">tarfile</a>
@@ -8238,6 +8340,10 @@ imported by:
  &#8226;   <a href="#_colorize">_colorize</a>
  &#8226;   <a href="#annotationlib">annotationlib</a>
  &#8226;   <a href="#copyreg">copyreg</a>
+ &#8226;   <a href="#core.crop_cache">core.crop_cache</a>
+ &#8226;   <a href="#core.crop_fetcher">core.crop_fetcher</a>
+ &#8226;   <a href="#core.crop_locator">core.crop_locator</a>
+ &#8226;   <a href="#core.crop_selector">core.crop_selector</a>
  &#8226;   <a href="#core.csv_parser">core.csv_parser</a>
  &#8226;   <a href="#core.defect_analyzer">core.defect_analyzer</a>
  &#8226;   <a href="#core.defect_filter">core.defect_filter</a>

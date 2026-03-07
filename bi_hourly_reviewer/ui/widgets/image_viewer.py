@@ -105,12 +105,6 @@ class ImageViewer(QWidget):
 
         footer_layout.addStretch()
 
-        self.nav_hint_label = QLabel("← → Navigate images    ↑ ↓ Navigate cells")
-        self.nav_hint_label.setStyleSheet(
-            f"color: {COLORS['text_muted']}; font-size: 8pt;"
-        )
-        footer_layout.addWidget(self.nav_hint_label)
-
         layout.addWidget(self.footer)
 
         # Show placeholder

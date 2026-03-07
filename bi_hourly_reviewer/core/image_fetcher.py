@@ -123,8 +123,8 @@ def fetch_single_cell(
     if cell_folder is None:
         return None
 
-    # Select the images for the defect side
-    selected_images = select_images_from_folder(cell_folder, side)
+    # Select the images for the defect side and type
+    selected_images = select_images_from_folder(cell_folder, side, judge_defect)
 
     if not selected_images:
         return None

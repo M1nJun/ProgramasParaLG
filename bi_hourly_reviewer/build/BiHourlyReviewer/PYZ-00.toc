@@ -101,6 +101,22 @@
    'C:\\Users\\leemi\\Desktop\\Github '
    'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\__init__.py',
    'PYMODULE'),
+  ('core.crop_cache',
+   'C:\\Users\\leemi\\Desktop\\Github '
+   'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\crop_cache.py',
+   'PYMODULE'),
+  ('core.crop_fetcher',
+   'C:\\Users\\leemi\\Desktop\\Github '
+   'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\crop_fetcher.py',
+   'PYMODULE'),
+  ('core.crop_locator',
+   'C:\\Users\\leemi\\Desktop\\Github '
+   'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\crop_locator.py',
+   'PYMODULE'),
+  ('core.crop_selector',
+   'C:\\Users\\leemi\\Desktop\\Github '
+   'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\crop_selector.py',
+   'PYMODULE'),
   ('core.csv_parser',
    'C:\\Users\\leemi\\Desktop\\Github '
    'Repositories\\ProgramasParaLG\\bi_hourly_reviewer\\core\\csv_parser.py',

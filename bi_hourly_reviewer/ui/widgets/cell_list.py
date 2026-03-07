@@ -6,96 +6,118 @@ Responsibilities:
     - Show cell ID, defect type, side, and judge badge per item.
     - Emit a signal when a cell is selected.
     - Support programmatic navigation (next/previous).
+    - Support filtering by JUDGE type (NG, DLNG, C-NG).
+
+Uses a custom QStyledItemDelegate for fast rendering instead of
+embedded QWidgets (which are slow to create in large numbers).
 """
 
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
-    QHBoxLayout,
     QListWidget,
     QListWidgetItem,
     QLabel,
-    QSizePolicy,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtCore import Qt, pyqtSignal, QSize, QRect, QModelIndex
+from PyQt5.QtGui import QFont, QPainter, QColor, QFontMetrics, QPen
 
-from ui.styles import COLORS, JUDGE_COLORS, FONT_FAMILY_MONO, SPACING_SM, SPACING_MD
+from ui.styles import COLORS, JUDGE_COLORS, FONT_FAMILY_MONO, FONT_FAMILY, SPACING_SM, SPACING_MD
 
 
-class CellItemWidget(QWidget):
+# Custom data roles for storing cell info on each QListWidgetItem
+ROLE_CELL_ID = Qt.UserRole + 1
+ROLE_JUDGE = Qt.UserRole + 2
+ROLE_JUDGE_DEFECT = Qt.UserRole + 3
+ROLE_SIDE = Qt.UserRole + 4
+ROLE_DATA_INDEX = Qt.UserRole + 5  # index into _filtered_cells
+
+
+class CellItemDelegate(QStyledItemDelegate):
     """
-    Custom widget rendered inside each list item.
-    Shows cell ID, defect type, side indicator, and judge badge.
+    Custom delegate that paints cell items directly.
+    Much faster than creating QWidget per item.
     """
 
-    def __init__(self, cell_data: dict, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.cell_data = cell_data
-        self._setup_ui()
+        self._font_id = QFont(FONT_FAMILY_MONO, 10, QFont.Bold)
+        self._font_defect = QFont(FONT_FAMILY, 9)
+        self._font_badge = QFont(FONT_FAMILY, 8, QFont.Bold)
+        self._font_side = QFont(FONT_FAMILY, 8)
 
-    def _setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACING_SM, SPACING_SM, SPACING_SM, SPACING_SM)
-        layout.setSpacing(2)
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        return QSize(0, 52)
 
-        # Top row: cell ID + judge badge
-        top_row = QHBoxLayout()
-        top_row.setSpacing(SPACING_SM)
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing, True)
 
-        cell_label = QLabel(self.cell_data.get("cell_id", "???"))
-        cell_label.setFont(QFont(FONT_FAMILY_MONO, 10, QFont.Bold))
-        cell_label.setStyleSheet(f"color: {COLORS['text_primary']};")
-        top_row.addWidget(cell_label)
+        rect = option.rect
+        is_selected = option.state & 0x00000004  # QStyle.State_Selected
 
-        top_row.addStretch()
+        # Background
+        if is_selected:
+            painter.fillRect(rect, QColor(COLORS["bg_tertiary"]))
+        else:
+            painter.fillRect(rect, QColor(COLORS["bg_secondary"]))
+
+        # Bottom border
+        painter.setPen(QPen(QColor(COLORS["border"]), 1))
+        painter.drawLine(rect.left(), rect.bottom(), rect.right(), rect.bottom())
+
+        # Data
+        cell_id = index.data(ROLE_CELL_ID) or "???"
+        judge = index.data(ROLE_JUDGE) or ""
+        judge_defect = index.data(ROLE_JUDGE_DEFECT) or ""
+        side = index.data(ROLE_SIDE) or ""
+
+        pad = SPACING_SM
+        x = rect.left() + pad + 4
+        y_top = rect.top() + pad + 2
+
+        # Top row: Cell ID (left) + Judge badge (right)
+        # Cell ID
+        painter.setFont(self._font_id)
+        painter.setPen(QColor(COLORS["text_primary"]))
+        painter.drawText(x, y_top + 14, cell_id)
 
         # Judge badge
-        judge = self.cell_data.get("judge", "")
-        badge_color = JUDGE_COLORS.get(judge, COLORS["text_muted"])
-        badge = QLabel(judge)
-        badge.setAlignment(Qt.AlignCenter)
-        badge.setFixedWidth(50)
-        badge.setStyleSheet(
-            f"background-color: {badge_color}; "
-            f"color: white; "
-            f"border-radius: 3px; "
-            f"padding: 1px 6px; "
-            f"font-size: 8pt; "
-            f"font-weight: 700;"
-        )
-        top_row.addWidget(badge)
+        badge_color = QColor(JUDGE_COLORS.get(judge, COLORS["text_muted"]))
+        badge_w = 48
+        badge_h = 18
+        badge_x = rect.right() - badge_w - pad - 4
+        badge_y = y_top
+        badge_rect = QRect(badge_x, badge_y, badge_w, badge_h)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(badge_color)
+        painter.drawRoundedRect(badge_rect, 3, 3)
+        painter.setFont(self._font_badge)
+        painter.setPen(QColor("white"))
+        painter.drawText(badge_rect, Qt.AlignCenter, judge)
 
-        layout.addLayout(top_row)
+        # Bottom row: Defect type (left) + Side (right)
+        y_bottom = y_top + 24
 
-        # Bottom row: defect type + side
-        bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(SPACING_SM)
+        painter.setFont(self._font_defect)
+        painter.setPen(QColor(COLORS["text_secondary"]))
+        painter.drawText(x, y_bottom + 12, judge_defect)
 
-        defect_label = QLabel(self.cell_data.get("judge_defect", ""))
-        defect_label.setStyleSheet(
-            f"color: {COLORS['text_secondary']}; font-size: 9pt;"
-        )
-        bottom_row.addWidget(defect_label)
+        side_text = {"UPPER": "▲ Upper", "LOWER": "▼ Lower", "BOTH": "◆ Both"}.get(side, side)
+        painter.setFont(self._font_side)
+        painter.setPen(QColor(COLORS["text_muted"]))
+        fm = QFontMetrics(self._font_side)
+        side_w = fm.horizontalAdvance(side_text)
+        painter.drawText(rect.right() - side_w - pad - 4, y_bottom + 12, side_text)
 
-        bottom_row.addStretch()
-
-        side = self.cell_data.get("side", "")
-        side_text = {"UPPER": "▲ Upper", "LOWER": "▼ Lower", "BOTH": "◆ Both"}.get(
-            side, side
-        )
-        side_label = QLabel(side_text)
-        side_label.setStyleSheet(
-            f"color: {COLORS['text_muted']}; font-size: 8pt;"
-        )
-        bottom_row.addWidget(side_label)
-
-        layout.addLayout(bottom_row)
+        painter.restore()
 
 
 class CellListWidget(QWidget):
     """
-    Scrollable list of defect cells.
+    Scrollable list of defect cells with filtering support.
     Emits cell_selected signal with the cell data dict when selection changes.
     """
 
@@ -103,7 +125,9 @@ class CellListWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._cells = []
+        self._all_cells = []
+        self._filtered_cells = []
+        self._active_filter = None
         self._setup_ui()
         self._connect_signals()
 
@@ -124,57 +148,86 @@ class CellListWidget(QWidget):
         )
         layout.addWidget(header)
 
-        # List
+        # List with custom delegate
         self.list_widget = QListWidget()
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.list_widget.setFocusPolicy(Qt.NoFocus)  # We handle keys in ReviewTab
+        self.list_widget.setFocusPolicy(Qt.NoFocus)
+        self.list_widget.setItemDelegate(CellItemDelegate(self.list_widget))
         layout.addWidget(self.list_widget)
 
     def _connect_signals(self):
         self.list_widget.currentRowChanged.connect(self._on_row_changed)
 
     def load_cells(self, cell_results: list):
-        """
-        Populate the list with cell results from the fetch pipeline.
+        """Load all cell results. Applies current filter automatically."""
+        self._all_cells = cell_results
+        self._apply_filter()
 
-        Args:
-            cell_results: List of dicts from fetch_pipeline results.
-        """
+    def set_filter(self, judge_type: str = None):
+        """Set the active JUDGE filter. None = show all."""
+        self._active_filter = judge_type
+        self._apply_filter()
+
+    def get_filter(self) -> str:
+        """Return the currently active filter, or None."""
+        return self._active_filter
+
+    def _apply_filter(self):
+        """Re-populate the list based on the active filter."""
+        if self._active_filter:
+            self._filtered_cells = [
+                c for c in self._all_cells
+                if c.get("judge", "") == self._active_filter
+            ]
+        else:
+            self._filtered_cells = list(self._all_cells)
+
+        self._rebuild_list()
+
+    def _rebuild_list(self):
+        """Rebuild the QListWidget from _filtered_cells using lightweight items."""
         self.list_widget.clear()
-        self._cells = cell_results
 
-        for cell_data in cell_results:
+        for cell_data in self._filtered_cells:
             item = QListWidgetItem()
-            widget = CellItemWidget(cell_data)
-            item.setSizeHint(QSize(0, 56))
+            item.setData(ROLE_CELL_ID, cell_data.get("cell_id", ""))
+            item.setData(ROLE_JUDGE, cell_data.get("judge", ""))
+            item.setData(ROLE_JUDGE_DEFECT, cell_data.get("judge_defect", ""))
+            item.setData(ROLE_SIDE, cell_data.get("side", ""))
+            item.setSizeHint(QSize(0, 52))
             self.list_widget.addItem(item)
-            self.list_widget.setItemWidget(item, widget)
 
-        # Select first item if available
         if self.list_widget.count() > 0:
             self.list_widget.setCurrentRow(0)
 
     def _on_row_changed(self, row: int):
         """Emit cell_selected when selection changes."""
-        if 0 <= row < len(self._cells):
-            self.cell_selected.emit(self._cells[row])
+        if 0 <= row < len(self._filtered_cells):
+            self.cell_selected.emit(self._filtered_cells[row])
 
     def select_next(self):
-        """Move selection to the next cell."""
         current = self.list_widget.currentRow()
         if current < self.list_widget.count() - 1:
             self.list_widget.setCurrentRow(current + 1)
 
     def select_previous(self):
-        """Move selection to the previous cell."""
         current = self.list_widget.currentRow()
         if current > 0:
             self.list_widget.setCurrentRow(current - 1)
 
     def current_index(self) -> int:
-        """Return the current selected row index."""
         return self.list_widget.currentRow()
 
     def cell_count(self) -> int:
-        """Return total number of cells in the list."""
         return self.list_widget.count()
+
+    def total_cell_count(self) -> int:
+        return len(self._all_cells)
+
+    def get_judge_counts(self) -> dict:
+        """Count cells by JUDGE type from all (unfiltered) cells."""
+        counts = {}
+        for cell in self._all_cells:
+            judge = cell.get("judge", "")
+            counts[judge] = counts.get(judge, 0) + 1
+        return counts
