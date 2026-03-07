@@ -20,13 +20,16 @@ _CELL_KEYS = ("CELL-ID", "CELL_ID")
 _UP_IMG3_KEYS = ("UPPER_IMAGE-PATH-3", "UPPER_IMAGE_PATH_3")
 _UP_OVL3_KEYS = ("UPPER_OVERLAY-IMAGE-PATH-3", "UPPER_OVERLAY_IMAGE_PATH_3")
 
+
 def _get_first(row: Dict[str, str], keys: Iterable[str]) -> str:
     for k in keys:
         if k in row:
             return row.get(k, "") or ""
     return ""
 
+
 _IDX_RE = re.compile(r"_(?P<i>\d+)_(?P<j>\d+)(?P<ovl>_overlay)?\.jpg$", re.IGNORECASE)
+
 
 def _ensure_0_2_variant(p: str) -> str:
     """
@@ -40,6 +43,18 @@ def _ensure_0_2_variant(p: str) -> str:
     ovl = m.group("ovl") or ""
     return _IDX_RE.sub(f"_0_2{ovl}.jpg", s)
 
+
+def _resolve_day_root(out_dir: Path, day_tag: str) -> Path:
+    """
+    Avoid duplicated YYYYMMDD folders.
+    If the user already chose ...\\<YYYYMMDD> as out_dir, don't append day_tag again.
+    """
+    out_dir = Path(out_dir).expanduser().resolve()
+    if out_dir.name == day_tag:
+        return out_dir
+    return out_dir / day_tag
+
+
 @dataclass
 class HornLeadStats:
     total_rows_scanned: int = 0
@@ -49,6 +64,7 @@ class HornLeadStats:
     missing_files: List[str] = field(default_factory=list)
     missing_pcs: List[str] = field(default_factory=list)
     missing_mavin_roots: List[str] = field(default_factory=list)
+
 
 def fetch_horn_lead_remote(
     *,
@@ -64,11 +80,9 @@ def fetch_horn_lead_remote(
     """
     CSV-driven fetch for B_DIM/H_DIM defects.
 
-    Output layout (Option A):
+    Output layout (Option A) - UPDATED:
       <out_dir>/<YYYYMMDD>/<DEFECT>/<CELL-ID>/
-        DIST/      (UPPER_IMAGE-PATH-3 + UPPER_OVERLAY-IMAGE-PATH-3)
-        HORNMARK/  (SourceImg.jpg + SourceImg_mask.png for side)
-        LEADEDGE/  (SourceImg.jpg + SourceImg.png for side)
+        (all images directly under CELL-ID, no DIST/HORNMARK/LEADEDGE subfolders)
     """
     def _log(msg: str) -> None:
         if log:
@@ -184,10 +198,11 @@ def fetch_horn_lead_remote(
                     stats.total_hits += 1
                     total += 6  # expected files per hit
 
-                    out_hit_dir = out_dir / day_tag / hit.defect / hit.cell_id
-                    out_dist = out_hit_dir / "DIST"
-                    out_horn = out_hit_dir / "HORNMARK"
-                    out_lead = out_hit_dir / "LEADEDGE"
+                    # UPDATED: avoid duplicated YYYYMMDD if out_dir already ends with it
+                    day_root = _resolve_day_root(out_dir, day_tag)
+
+                    # UPDATED: no DIST/HORNMARK/LEADEDGE subfolders — everything under CELL-ID
+                    out_cell_dir = day_root / hit.defect / hit.cell_id
 
                     _log(f"[HIT] {pc_key} {day_tag} {hit.defect} {hit.cell_id} side={hit.side}")
 
@@ -197,13 +212,13 @@ def fetch_horn_lead_remote(
                         src_ovl = local_path_to_unc(ip, hit.upper_overlay_path)
 
                         if src_img.exists():
-                            _copy_one(src_img, out_dist)
+                            _copy_one(src_img, out_cell_dir)
                         else:
                             stats.missing_files.append(str(src_img))
                             _log(f"[MISS] {src_img}")
 
                         if src_ovl.exists():
-                            _copy_one(src_ovl, out_dist)
+                            _copy_one(src_ovl, out_cell_dir)
                         else:
                             stats.missing_files.append(str(src_ovl))
                             _log(f"[MISS] {src_ovl}")
@@ -218,13 +233,13 @@ def fetch_horn_lead_remote(
                         horn_msk = list(horn_dir.glob(f"{hit.cell_id}_*HORNMARK_{hit.side}*_SourceImg_mask.png"))
 
                         if horn_jpg:
-                            _copy_one(horn_jpg[0], out_horn)
+                            _copy_one(horn_jpg[0], out_cell_dir)
                         else:
                             stats.missing_files.append(f"{horn_dir} :: {hit.cell_id} HORNMARK_{hit.side} jpg")
                             _log(f"[MISS] HORNMARK jpg for {hit.cell_id} side {hit.side}")
 
                         if horn_msk:
-                            _copy_one(horn_msk[0], out_horn)
+                            _copy_one(horn_msk[0], out_cell_dir)
                         else:
                             stats.missing_files.append(f"{horn_dir} :: {hit.cell_id} HORNMARK_{hit.side} mask")
                             _log(f"[MISS] HORNMARK mask for {hit.cell_id} side {hit.side}")
@@ -235,13 +250,13 @@ def fetch_horn_lead_remote(
                         lead_png = list(lead_dir.glob(f"{hit.cell_id}_*LEAD EDGE {hit.side}*_SourceImg.png"))
 
                         if lead_jpg:
-                            _copy_one(lead_jpg[0], out_lead)
+                            _copy_one(lead_jpg[0], out_cell_dir)
                         else:
                             stats.missing_files.append(f"{lead_dir} :: {hit.cell_id} LEAD EDGE {hit.side} jpg")
                             _log(f"[MISS] LEADEDGE jpg for {hit.cell_id} side {hit.side}")
 
                         if lead_png:
-                            _copy_one(lead_png[0], out_lead)
+                            _copy_one(lead_png[0], out_cell_dir)
                         else:
                             stats.missing_files.append(f"{lead_dir} :: {hit.cell_id} LEAD EDGE {hit.side} png")
                             _log(f"[MISS] LEADEDGE png for {hit.cell_id} side {hit.side}")
