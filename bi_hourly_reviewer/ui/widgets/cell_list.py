@@ -60,7 +60,10 @@ class CellItemDelegate(QStyledItemDelegate):
 
         # Background
         if is_selected:
-            painter.fillRect(rect, QColor(COLORS["bg_tertiary"]))
+            painter.fillRect(rect, QColor("#2D3340"))
+            # Left accent bar for selected item
+            accent_rect = QRect(rect.left(), rect.top(), 3, rect.height())
+            painter.fillRect(accent_rect, QColor(COLORS["accent_blue"]))
         else:
             painter.fillRect(rect, QColor(COLORS["bg_secondary"]))
 
@@ -81,7 +84,10 @@ class CellItemDelegate(QStyledItemDelegate):
         # Top row: Cell ID (left) + Judge badge (right)
         # Cell ID
         painter.setFont(self._font_id)
-        painter.setPen(QColor(COLORS["text_primary"]))
+        if is_selected:
+            painter.setPen(QColor("#FFFFFF"))
+        else:
+            painter.setPen(QColor(COLORS["text_primary"]))
         painter.drawText(x, y_top + 14, cell_id)
 
         # Judge badge
